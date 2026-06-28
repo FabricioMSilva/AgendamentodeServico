@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
 import { confirmAppointment, finalizeAppointment } from '@/actions/admin'
@@ -25,6 +25,17 @@ function AppointmentCard({
   appt: AppointmentWithRelations
   actions?: React.ReactNode
 }) {
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  const actionsWithError = actions
+    ? React.Children.map(actions, (child) => {
+        if (React.isValidElement<{ onError?: (msg: string) => void }>(child)) {
+          return React.cloneElement(child, { onError: (msg: string) => setActionError(msg) })
+        }
+        return child
+      })
+    : null
+
   return (
     <div className="border border-gray-200 rounded-xl p-4 space-y-1 bg-white">
       <div className="flex items-center justify-between gap-2">
@@ -37,7 +48,10 @@ function AppointmentCard({
       <p className="text-xs text-gray-400">
         {dayjs(appt.scheduled_at).format('ddd, D MMM [às] HH:mm')}
       </p>
-      {actions && <div className="pt-2 flex flex-wrap gap-2">{actions}</div>}
+      {actionError && (
+        <p className="text-xs text-red-600 pt-1">{actionError}</p>
+      )}
+      {actionsWithError && <div className="pt-2 flex flex-wrap gap-2">{actionsWithError}</div>}
     </div>
   )
 }
@@ -47,10 +61,12 @@ type ActionVariant = 'primary' | 'danger' | 'success'
 function ActionButton({
   label,
   onClick,
+  onError = () => {},
   variant = 'primary',
 }: {
   label: string
-  onClick: () => Promise<void>
+  onClick: () => Promise<{ error?: string } | undefined>
+  onError?: (msg: string) => void
   variant?: ActionVariant
 }) {
   const [loading, setLoading] = useState(false)
@@ -66,7 +82,8 @@ function ActionButton({
       disabled={loading}
       onClick={async () => {
         setLoading(true)
-        await onClick()
+        const result = await onClick()
+        if (result?.error) onError(result.error)
         setLoading(false)
       }}
       className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 ${colors[variant]}`}
@@ -104,16 +121,12 @@ export default function AppointmentBoard({
                   <ActionButton
                     label="Confirmar"
                     variant="success"
-                    onClick={async () => {
-                      await confirmAppointment(a.id)
-                    }}
+                    onClick={() => confirmAppointment(a.id)}
                   />
                   <ActionButton
                     label="Cancelar"
                     variant="danger"
-                    onClick={async () => {
-                      await finalizeAppointment(a.id, 'cancelled')
-                    }}
+                    onClick={() => finalizeAppointment(a.id, 'cancelled')}
                   />
                 </>
               }
@@ -140,23 +153,17 @@ export default function AppointmentBoard({
                   <ActionButton
                     label="Concluir"
                     variant="success"
-                    onClick={async () => {
-                      await finalizeAppointment(a.id, 'completed')
-                    }}
+                    onClick={() => finalizeAppointment(a.id, 'completed')}
                   />
                   <ActionButton
                     label="Não Compareceu"
                     variant="danger"
-                    onClick={async () => {
-                      await finalizeAppointment(a.id, 'no_show')
-                    }}
+                    onClick={() => finalizeAppointment(a.id, 'no_show')}
                   />
                   <ActionButton
                     label="Cancelar"
                     variant="danger"
-                    onClick={async () => {
-                      await finalizeAppointment(a.id, 'cancelled')
-                    }}
+                    onClick={() => finalizeAppointment(a.id, 'cancelled')}
                   />
                 </>
               }
