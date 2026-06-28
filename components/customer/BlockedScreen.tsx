@@ -7,8 +7,8 @@ export default function BlockedScreen({ name }: { name: string }) {
             🚫
           </span>
         </div>
-        <h1 className="text-xl font-bold">{name}</h1>
-        <p className="text-base font-semibold text-gray-800">Indisponível no momento</p>
+        <h1 className="text-xl font-bold">Indisponível no momento</h1>
+        <p className="text-base font-medium text-gray-700">{name}</p>
         <p className="text-sm text-gray-600">
           Este salão está temporariamente indisponível. Entre em contato diretamente com o salão.
         </p>

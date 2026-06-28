@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
@@ -11,16 +12,20 @@ type Props = {
   params: Promise<{ slug: string }>
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params
+// React cache deduplicates this across generateMetadata + page() in the same request
+const getEstablishment = cache(async (slug: string) => {
   const supabase = await createClient()
-
-  const { data: establishment } = await supabase
+  const { data } = await supabase
     .from('establishments')
-    .select('name')
+    .select('*, services(*)')
     .eq('slug', slug)
     .single()
+  return data
+})
 
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  const establishment = await getEstablishment(slug)
   const name = establishment?.name ?? 'Salão'
   return {
     title: `${name} | Vip Space`,
@@ -30,13 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SlugPage({ params }: Props) {
   const { slug } = await params
-  const supabase = await createClient()
-
-  const { data: establishment } = await supabase
-    .from('establishments')
-    .select('*, services(*)')
-    .eq('slug', slug)
-    .single()
+  const establishment = await getEstablishment(slug)
 
   if (!establishment) notFound()
 
