@@ -7,11 +7,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
-// Cast to any: Database stub uses Record<string,unknown> so table-level types
-// resolve to never for insert/update. Cast is safe — service role client has
-// unrestricted access and schema is enforced by Supabase at runtime.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getDb = () => createAdminClient() as any
+const getDb = () => createAdminClient()
 
 const EstablishmentSchema = z.object({
   name: z.string().min(2).max(100),
