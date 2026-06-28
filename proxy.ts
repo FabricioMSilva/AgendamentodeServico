@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { LRUCache } from 'lru-cache'
+import { verifyToken } from '@/lib/jwt'
 
 // Sliding window rate limiter: 60 requests per minute per IP
 const rateLimitCache = new LRUCache<string, number[]>({ max: 500 })
@@ -17,7 +18,7 @@ function isRateLimited(ip: string): boolean {
   return timestamps.length > MAX_REQUESTS
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // ── Rate limiting ───────────────────────────────────────────────────────────
   const ip =
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
@@ -51,11 +52,25 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // ── JWT verification (local, no network call) ─────────────────────────────
+  // getSession() reads the JWT from the cookie without contacting Supabase.
+  // verifyToken() then validates signature + expiry using SUPABASE_JWT_SECRET.
+  // This is cryptographically sound: a tampered or expired token will throw.
+  const { data: { session } } = await supabase.auth.getSession()
+
+  let isAuthenticated = false
+  if (session?.access_token) {
+    try {
+      await verifyToken(session.access_token)
+      isAuthenticated = true
+    } catch {
+      isAuthenticated = false
+    }
+  }
 
   const { pathname } = request.nextUrl
 
-  if (!user && (pathname.startsWith('/admin') || pathname.startsWith('/sales'))) {
+  if (!isAuthenticated && (pathname.startsWith('/admin') || pathname.startsWith('/sales'))) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
