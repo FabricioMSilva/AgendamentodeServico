@@ -1,0 +1,187 @@
+'use client'
+
+import { useState } from 'react'
+import dayjs from 'dayjs'
+import 'dayjs/locale/pt-br'
+import { confirmAppointment, finalizeAppointment } from '@/actions/admin'
+import Badge from '@/components/ui/Badge'
+import type { AppointmentStatus } from '@/database.types'
+
+dayjs.locale('pt-br')
+
+// Appointments joined with profiles and services — shapes returned by Supabase select
+type AppointmentWithRelations = {
+  id: string
+  scheduled_at: string
+  status: AppointmentStatus
+  profiles: { name: string | null; email: string } | null
+  services: { name: string } | null
+}
+
+function AppointmentCard({
+  appt,
+  actions,
+}: {
+  appt: AppointmentWithRelations
+  actions?: React.ReactNode
+}) {
+  return (
+    <div className="border border-gray-200 rounded-xl p-4 space-y-1 bg-white">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold truncate">
+          {appt.profiles?.name ?? appt.profiles?.email ?? 'Cliente'}
+        </p>
+        <Badge status={appt.status} />
+      </div>
+      <p className="text-xs text-gray-500">{appt.services?.name}</p>
+      <p className="text-xs text-gray-400">
+        {dayjs(appt.scheduled_at).format('ddd, D MMM [às] HH:mm')}
+      </p>
+      {actions && <div className="pt-2 flex flex-wrap gap-2">{actions}</div>}
+    </div>
+  )
+}
+
+type ActionVariant = 'primary' | 'danger' | 'success'
+
+function ActionButton({
+  label,
+  onClick,
+  variant = 'primary',
+}: {
+  label: string
+  onClick: () => Promise<void>
+  variant?: ActionVariant
+}) {
+  const [loading, setLoading] = useState(false)
+
+  const colors: Record<ActionVariant, string> = {
+    primary: 'bg-black text-white hover:bg-gray-800',
+    danger: 'bg-red-100 text-red-700 hover:bg-red-200',
+    success: 'bg-green-100 text-green-700 hover:bg-green-200',
+  }
+
+  return (
+    <button
+      disabled={loading}
+      onClick={async () => {
+        setLoading(true)
+        await onClick()
+        setLoading(false)
+      }}
+      className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 ${colors[variant]}`}
+    >
+      {loading ? '...' : label}
+    </button>
+  )
+}
+
+interface AppointmentBoardProps {
+  pendingApproval: AppointmentWithRelations[]
+  confirmed: AppointmentWithRelations[]
+  completedServices: AppointmentWithRelations[]
+}
+
+export default function AppointmentBoard({
+  pendingApproval,
+  confirmed,
+  completedServices,
+}: AppointmentBoardProps) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Coluna 1: Aguardando Aprovação */}
+      <div>
+        <h3 className="text-sm font-semibold text-amber-700 mb-3">
+          Aguardando Aprovação ({pendingApproval.length})
+        </h3>
+        <div className="space-y-3">
+          {pendingApproval.map((a) => (
+            <AppointmentCard
+              key={a.id}
+              appt={a}
+              actions={
+                <>
+                  <ActionButton
+                    label="Confirmar"
+                    variant="success"
+                    onClick={async () => {
+                      await confirmAppointment(a.id)
+                    }}
+                  />
+                  <ActionButton
+                    label="Cancelar"
+                    variant="danger"
+                    onClick={async () => {
+                      await finalizeAppointment(a.id, 'cancelled')
+                    }}
+                  />
+                </>
+              }
+            />
+          ))}
+          {pendingApproval.length === 0 && (
+            <p className="text-sm text-gray-400">Nenhuma solicitação pendente.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Coluna 2: Confirmados */}
+      <div>
+        <h3 className="text-sm font-semibold text-blue-700 mb-3">
+          Confirmados ({confirmed.length})
+        </h3>
+        <div className="space-y-3">
+          {confirmed.map((a) => (
+            <AppointmentCard
+              key={a.id}
+              appt={a}
+              actions={
+                <>
+                  <ActionButton
+                    label="Concluir"
+                    variant="success"
+                    onClick={async () => {
+                      await finalizeAppointment(a.id, 'completed')
+                    }}
+                  />
+                  <ActionButton
+                    label="Não Compareceu"
+                    variant="danger"
+                    onClick={async () => {
+                      await finalizeAppointment(a.id, 'no_show')
+                    }}
+                  />
+                  <ActionButton
+                    label="Cancelar"
+                    variant="danger"
+                    onClick={async () => {
+                      await finalizeAppointment(a.id, 'cancelled')
+                    }}
+                  />
+                </>
+              }
+            />
+          ))}
+          {confirmed.length === 0 && (
+            <p className="text-sm text-gray-400">Nenhum agendamento confirmado.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Coluna 3: Serviços Concluídos */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-600 mb-3">
+          Serviços Concluídos ({completedServices.length})
+        </h3>
+        <div className="space-y-3">
+          {completedServices.map((a) => (
+            <AppointmentCard key={a.id} appt={a} />
+          ))}
+          {completedServices.length === 0 && (
+            <p className="text-sm text-gray-400">Nenhum serviço concluído ainda.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
