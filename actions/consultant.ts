@@ -7,6 +7,12 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+// Cast to any: Database stub uses Record<string,unknown> so table-level types
+// resolve to never for insert/update. Cast is safe — service role client has
+// unrestricted access and schema is enforced by Supabase at runtime.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getDb = () => createAdminClient() as any
+
 const EstablishmentSchema = z.object({
   name: z.string().min(2).max(100),
   owner_email: z.string().email(),
@@ -43,11 +49,7 @@ export async function createEstablishment(formData: FormData) {
     return { error: parsed.error.flatten().fieldErrors }
   }
 
-  // Cast to any: Database stub uses Record<string,unknown> so table-level types
-  // resolve to never for insert/update. Cast is safe — service role client has
-  // unrestricted access and schema is enforced by Supabase at runtime.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = createAdminClient() as any
+  const db = getDb()
 
   // Check if owner already has an account — handle race with trigger
   const { data: existingProfile } = await db
@@ -68,17 +70,23 @@ export async function createEstablishment(formData: FormData) {
 
   if (error) {
     if (error.code === '23505') {
-      return { error: { slug: ['This slug is already taken'] } }
+      if (error.message.toLowerCase().includes('slug')) {
+        return { error: { slug: ['Este endereço já está em uso'] } }
+      }
+      return { error: { _form: ['Conflito de dados: ' + error.message] } }
     }
     return { error: { _form: [error.message] } }
   }
 
   // If owner already exists, also update their role to admin
   if (existingProfile && establishment) {
-    await db
+    const { error: roleError } = await db
       .from('profiles')
       .update({ role: 'admin' })
       .eq('id', existingProfile.id)
+    if (roleError) {
+      return { error: { _form: ['Estabelecimento criado, mas falha ao definir perfil de admin: ' + roleError.message] } }
+    }
   }
 
   revalidatePath('/sales/dashboard')
@@ -88,19 +96,16 @@ export async function createEstablishment(formData: FormData) {
 export async function setEstablishmentBlocked(
   establishmentId: string,
   isBlocked: boolean
-) {
+): Promise<void> {
   await assertSuperAdmin()
 
-  // Cast to any: Database stub uses Record<string,unknown> — see createEstablishment
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = createAdminClient() as any
+  const db = getDb()
   const { error } = await db
     .from('establishments')
     .update({ is_blocked: isBlocked })
     .eq('id', establishmentId)
 
-  if (error) return { error: error.message }
+  if (error) throw new Error(error.message)
 
   revalidatePath('/sales/dashboard')
-  return { success: true }
 }
