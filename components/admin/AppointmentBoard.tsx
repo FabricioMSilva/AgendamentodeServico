@@ -14,8 +14,29 @@ type AppointmentWithRelations = {
   id: string
   scheduled_at: string
   status: AppointmentStatus
+  customer_name: string | null
+  customer_phone: string | null
+  total_price: number | null
+  total_duration_minutes: number
   profiles: { name: string | null; email: string } | null
   services: { name: string } | null
+  appointment_items: {
+    service_name: string
+    price: number | null
+    duration_minutes: number
+  }[]
+}
+
+function money(value: number | null) {
+  return value == null ? 'Sob consulta' : `R$ ${Number(value).toFixed(2)}`
+}
+
+function whatsappUrl(phone: string, appt: AppointmentWithRelations) {
+  const digits = phone.replace(/\D/g, '')
+  const text = encodeURIComponent(
+    `Olá, ${appt.customer_name ?? 'tudo bem'}! Seu horário em nosso estabelecimento está marcado para ${dayjs(appt.scheduled_at).format('DD/MM [às] HH:mm')}. Pode confirmar sua presença?`,
+  )
+  return `https://wa.me/${digits}?text=${text}`
 }
 
 function AppointmentCard({
@@ -40,18 +61,38 @@ function AppointmentCard({
     <div className="border border-gray-200 rounded-xl p-4 space-y-1 bg-white">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-semibold truncate">
-          {appt.profiles?.name ?? appt.profiles?.email ?? 'Cliente'}
+          {appt.customer_name ?? appt.profiles?.name ?? appt.profiles?.email ?? 'Cliente'}
         </p>
         <Badge status={appt.status} />
       </div>
-      <p className="text-xs text-gray-500">{appt.services?.name}</p>
+      <p className="text-xs text-gray-500">
+        {appt.appointment_items.length > 0
+          ? appt.appointment_items.map((item) => item.service_name).join(' + ')
+          : appt.services?.name}
+      </p>
       <p className="text-xs text-gray-400">
-        {dayjs(appt.scheduled_at).format('ddd, D MMM [às] HH:mm')}
+        {dayjs(appt.scheduled_at).format('ddd, D MMM [às] HH:mm')} · {appt.total_duration_minutes} min
+      </p>
+      <p className="text-xs text-gray-400">
+        {money(appt.total_price)}
+        {appt.customer_phone ? ` · ${appt.customer_phone}` : ''}
       </p>
       {actionError && (
         <p className="text-xs text-red-600 pt-1">{actionError}</p>
       )}
-      {actionsWithError && <div className="pt-2 flex flex-wrap gap-2">{actionsWithError}</div>}
+      <div className="pt-2 flex flex-wrap gap-2">
+        {appt.customer_phone && (
+          <a
+            href={whatsappUrl(appt.customer_phone, appt)}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+          >
+            WhatsApp
+          </a>
+        )}
+        {actionsWithError}
+      </div>
     </div>
   )
 }

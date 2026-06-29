@@ -76,9 +76,11 @@ export interface Database {
           name: string
           address: string | null
           contact: string | null
+          whatsapp_phone: string | null
           logo_url: string | null
           business_hours: Json
           slots_per_schedule: number
+          reminder_hours_before: number
           is_blocked: boolean
           created_at: string
         }
@@ -90,9 +92,11 @@ export interface Database {
           name: string
           address?: string | null
           contact?: string | null
+          whatsapp_phone?: string | null
           logo_url?: string | null
           business_hours?: Json
           slots_per_schedule?: number
+          reminder_hours_before?: number
           is_blocked?: boolean
           created_at?: string
         }
@@ -104,9 +108,11 @@ export interface Database {
           name?: string
           address?: string | null
           contact?: string | null
+          whatsapp_phone?: string | null
           logo_url?: string | null
           business_hours?: Json
           slots_per_schedule?: number
+          reminder_hours_before?: number
           is_blocked?: boolean
           created_at?: string
         }
@@ -126,6 +132,11 @@ export interface Database {
           name: string
           price_type: PriceType
           price: number | null
+          description: string | null
+          image_url: string | null
+          duration_minutes: number
+          category: string
+          is_active: boolean
           created_at: string
         }
         Insert: {
@@ -134,6 +145,11 @@ export interface Database {
           name: string
           price_type: PriceType
           price?: number | null
+          description?: string | null
+          image_url?: string | null
+          duration_minutes?: number
+          category?: string
+          is_active?: boolean
           created_at?: string
         }
         Update: {
@@ -142,6 +158,11 @@ export interface Database {
           name?: string
           price_type?: PriceType
           price?: number | null
+          description?: string | null
+          image_url?: string | null
+          duration_minutes?: number
+          category?: string
+          is_active?: boolean
           created_at?: string
         }
         Relationships: [
@@ -161,6 +182,13 @@ export interface Database {
           service_id: string
           scheduled_at: string
           status: AppointmentStatus
+          customer_name: string | null
+          customer_phone: string | null
+          notes: string | null
+          total_price: number | null
+          total_duration_minutes: number
+          reminder_sent_at: string | null
+          confirmed_by_customer_at: string | null
           created_at: string
         }
         Insert: {
@@ -170,6 +198,13 @@ export interface Database {
           service_id: string
           scheduled_at: string
           status?: AppointmentStatus
+          customer_name?: string | null
+          customer_phone?: string | null
+          notes?: string | null
+          total_price?: number | null
+          total_duration_minutes?: number
+          reminder_sent_at?: string | null
+          confirmed_by_customer_at?: string | null
           created_at?: string
         }
         Update: {
@@ -179,6 +214,13 @@ export interface Database {
           service_id?: string
           scheduled_at?: string
           status?: AppointmentStatus
+          customer_name?: string | null
+          customer_phone?: string | null
+          notes?: string | null
+          total_price?: number | null
+          total_duration_minutes?: number
+          reminder_sent_at?: string | null
+          confirmed_by_customer_at?: string | null
           created_at?: string
         }
         Relationships: [
@@ -196,6 +238,52 @@ export interface Database {
           },
           {
             foreignKeyName: 'appointments_service_id_fkey'
+            columns: ['service_id']
+            referencedRelation: 'services'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      appointment_items: {
+        Row: {
+          id: string
+          appointment_id: string
+          service_id: string
+          service_name: string
+          price_type: PriceType
+          price: number | null
+          duration_minutes: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          appointment_id: string
+          service_id: string
+          service_name: string
+          price_type: PriceType
+          price?: number | null
+          duration_minutes: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          appointment_id?: string
+          service_id?: string
+          service_name?: string
+          price_type?: PriceType
+          price?: number | null
+          duration_minutes?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'appointment_items_appointment_id_fkey'
+            columns: ['appointment_id']
+            referencedRelation: 'appointments'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'appointment_items_service_id_fkey'
             columns: ['service_id']
             referencedRelation: 'services'
             referencedColumns: ['id']
@@ -315,3 +403,4 @@ export type Profile = Tables<'profiles'>
 export type Establishment = Tables<'establishments'>
 export type Service = Tables<'services'>
 export type Appointment = Tables<'appointments'>
+export type AppointmentItem = Tables<'appointment_items'>

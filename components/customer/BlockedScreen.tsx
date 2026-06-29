@@ -1,16 +1,14 @@
 export default function BlockedScreen({ name }: { name: string }) {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-sm w-full text-center p-8 space-y-4">
-        <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto">
-          <span className="text-2xl" role="img" aria-label="bloqueado">
-            🚫
-          </span>
+    <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#ffffff_0%,#f8f3ff_100%)] px-5">
+      <div className="w-full max-w-sm space-y-4 rounded-[8px] border border-[#ece4f7] bg-white p-8 text-center shadow-[0_18px_50px_rgba(106,0,255,0.08)]">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ff007f_0%,#6a00ff_100%)] text-2xl text-white">
+          !
         </div>
-        <h1 className="text-xl font-bold">Indisponível no momento</h1>
-        <p className="text-base font-medium text-gray-700">{name}</p>
-        <p className="text-sm text-gray-600">
-          Este salão está temporariamente indisponível. Entre em contato diretamente com o salão.
+        <h1 className="text-xl font-bold text-black">Indisponível no momento</h1>
+        <p className="text-base font-medium text-[#3a3a3a]">{name}</p>
+        <p className="text-sm text-[#6a6a6a]">
+          Este estabelecimento está temporariamente indisponível. Entre em contato diretamente com a equipe.
         </p>
       </div>
     </main>

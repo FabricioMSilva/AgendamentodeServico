@@ -50,7 +50,7 @@ export default function LogoUpload({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={previewUrl}
-          alt="Logo do salão"
+          alt="Logo do estabelecimento"
           className="w-16 h-16 rounded-xl object-cover border border-gray-200"
         />
       )}

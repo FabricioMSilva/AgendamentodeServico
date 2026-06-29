@@ -36,17 +36,17 @@ export default function CreateEstablishmentForm() {
       )}
       {success && (
         <p className="col-span-2 text-sm text-green-700 bg-green-50 p-3 rounded-lg">
-          Establishment created successfully.
+          Estabelecimento criado com sucesso.
         </p>
       )}
 
-      <Field label="Salon Name" name="name" required errors={errors.name} />
+      <Field label="Nome do estabelecimento" name="name" required errors={errors.name} />
       <Field label="Owner Email" name="owner_email" type="email" required errors={errors.owner_email} />
-      <Field label="Slug (URL path)" name="slug" placeholder="my-salon" required errors={errors.slug} />
-      <Field label="Contact" name="contact" errors={errors.contact} />
-      <Field label="Address" name="address" className="col-span-2" errors={errors.address} />
+      <Field label="Slug (URL path)" name="slug" placeholder="meu-estabelecimento" required errors={errors.slug} />
+      <Field label="Contato" name="contact" errors={errors.contact} />
+      <Field label="Endereço" name="address" className="col-span-2" errors={errors.address} />
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Slots per Schedule</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Vagas por grade</label>
         <input
           name="slots_per_schedule"
           type="number"
@@ -63,7 +63,7 @@ export default function CreateEstablishmentForm() {
           disabled={pending}
           className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
         >
-          {pending ? 'Creating…' : 'Create Establishment'}
+          {pending ? 'Criando…' : 'Criar estabelecimento'}
         </button>
       </div>
     </form>

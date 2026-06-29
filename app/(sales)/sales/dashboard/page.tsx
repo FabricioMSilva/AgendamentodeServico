@@ -13,17 +13,17 @@ export default async function SalesDashboard() {
   return (
     <main className="max-w-5xl mx-auto p-6 space-y-8">
       <header>
-        <h1 className="text-2xl font-bold">Consultant Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Manage salon registrations</p>
+        <h1 className="text-2xl font-bold">Cadastro de Negócios</h1>
+        <p className="text-sm text-gray-500 mt-1">Gerencie salões, clínicas e espaços de saúde e beleza</p>
       </header>
 
       <section>
-        <h2 className="text-lg font-semibold mb-4">Create New Establishment</h2>
+        <h2 className="text-lg font-semibold mb-4">Novo estabelecimento</h2>
         <CreateEstablishmentForm />
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold mb-4">All Establishments</h2>
+        <h2 className="text-lg font-semibold mb-4">Todos os estabelecimentos</h2>
         <div className="divide-y rounded-xl border">
           {establishments?.map((e: any) => {
             const blockAction = async () => {
@@ -57,7 +57,7 @@ export default async function SalesDashboard() {
             )
           })}
           {(!establishments || establishments.length === 0) && (
-            <p className="p-4 text-sm text-gray-500">No establishments yet.</p>
+            <p className="p-4 text-sm text-gray-500">Nenhum estabelecimento cadastrado ainda.</p>
           )}
         </div>
       </section>

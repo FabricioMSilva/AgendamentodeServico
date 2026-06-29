@@ -9,9 +9,12 @@ const withPWA = require('next-pwa')({
 
 // CSP: only allow scripts/styles from self and Google OAuth iframe.
 // 'unsafe-inline' for styles is required by Tailwind + react-day-picker.
+// Next/React need 'unsafe-eval' in development for enhanced debugging.
+const isDev = process.env.NODE_ENV === 'development'
+
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline';
+  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''};
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com;
   font-src 'self';
