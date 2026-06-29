@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { formatAddress, normalizeCep } from '@/lib/address'
 
 async function getAdminEstablishmentId(): Promise<string> {
   const supabase = await createClient()
@@ -168,9 +169,15 @@ const DAY_KEYS = ['0', '1', '2', '3', '4', '5', '6'] as const
 
 const EstablishmentSettingsSchema = z.object({
   name: z.string().min(2).max(100),
-  address: z.string().max(200).optional(),
   contact: z.string().max(100).optional(),
   whatsapp_phone: z.string().max(30).optional(),
+  zip_code: z.string().max(9).optional(),
+  street: z.string().max(120).optional(),
+  number: z.string().max(20).optional(),
+  complement: z.string().max(60).optional(),
+  neighborhood: z.string().max(80).optional(),
+  city: z.string().max(80).optional(),
+  state: z.string().max(2).optional(),
   slots_per_schedule: z.coerce.number().int().min(1).max(48),
   reminder_hours_before: z.coerce.number().int().min(1).max(72).default(12),
 })
@@ -189,14 +196,31 @@ export async function updateEstablishmentSettings(formData: FormData): Promise<{
 
   const parsed = EstablishmentSettingsSchema.safeParse({
     name: formData.get('name'),
-    address: formData.get('address') || undefined,
     contact: formData.get('contact') || undefined,
     whatsapp_phone: formData.get('whatsapp_phone') || undefined,
+    zip_code: formData.get('zip_code') || undefined,
+    street: formData.get('street') || undefined,
+    number: formData.get('number') || undefined,
+    complement: formData.get('complement') || undefined,
+    neighborhood: formData.get('neighborhood') || undefined,
+    city: formData.get('city') || undefined,
+    state: formData.get('state') || undefined,
     slots_per_schedule: formData.get('slots_per_schedule'),
     reminder_hours_before: formData.get('reminder_hours_before') || 12,
   })
 
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors as Record<string, string[]> }
+
+  const zipCode = normalizeCep(parsed.data.zip_code ?? '')
+  const address = formatAddress({
+    zip_code: zipCode || null,
+    street: parsed.data.street ?? null,
+    number: parsed.data.number ?? null,
+    complement: parsed.data.complement ?? null,
+    neighborhood: parsed.data.neighborhood ?? null,
+    city: parsed.data.city ?? null,
+    state: parsed.data.state ?? null,
+  })
 
   const businessHours = DAY_KEYS.reduce<Record<string, { open: string; close: string } | null>>(
     (hours, day) => {
@@ -215,9 +239,16 @@ export async function updateEstablishmentSettings(formData: FormData): Promise<{
     .update({
       ...parsed.data,
       business_hours: businessHours,
-      address: parsed.data.address || null,
       contact: parsed.data.contact || null,
       whatsapp_phone: parsed.data.whatsapp_phone || null,
+      address: address || null,
+      zip_code: zipCode || null,
+      street: parsed.data.street || null,
+      number: parsed.data.number || null,
+      complement: parsed.data.complement || null,
+      neighborhood: parsed.data.neighborhood || null,
+      city: parsed.data.city || null,
+      state: parsed.data.state || null,
     })
     .eq('id', establishmentId)
 

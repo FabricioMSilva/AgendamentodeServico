@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import { getNeedInfo } from '@/lib/search/needs'
 
@@ -9,7 +10,6 @@ type Role = 'cliente' | 'negocio' | null
 type Access = 'visitante' | 'autenticado' | null
 type ClientNeed = 'Cortar cabelo' | 'Fazer unha' | 'Depilação' | 'Estética' | 'Clínica' | 'Outro' | null
 type SearchMode = 'estabelecimento' | 'horario' | null
-type BusinessType = 'Salão' | 'Clínica' | 'Estética' | 'Barbearia' | 'Spa' | 'Outro' | null
 
 type InitialIdentity = {
   name: string | null
@@ -38,15 +38,6 @@ const searchModeOptions: Array<{ label: string; value: Exclude<SearchMode, null>
   },
 ]
 
-const businessTypeOptions: Exclude<BusinessType, null>[] = [
-  'Salão',
-  'Clínica',
-  'Estética',
-  'Barbearia',
-  'Spa',
-  'Outro',
-]
-
 function getGreetingLabel(referenceDate = new Date()) {
   const hour = referenceDate.getHours()
 
@@ -62,12 +53,12 @@ function getDisplayName(identity: InitialIdentity) {
 }
 
 export default function EntryQuiz({ initialIdentity = null }: { initialIdentity?: InitialIdentity }) {
+  const router = useRouter()
   const [role, setRole] = useState<Role>(null)
   const [access, setAccess] = useState<Access>(initialIdentity ? 'autenticado' : null)
   const [displayName, setDisplayName] = useState<string | null>(getDisplayName(initialIdentity))
   const [clientNeed, setClientNeed] = useState<ClientNeed>(null)
   const [searchMode, setSearchMode] = useState<SearchMode>(null)
-  const [businessType, setBusinessType] = useState<BusinessType>(null)
   const [animateIn, setAnimateIn] = useState(true)
 
   useEffect(() => {
@@ -77,9 +68,8 @@ export default function EntryQuiz({ initialIdentity = null }: { initialIdentity?
   }, [initialIdentity])
 
   const viewKey = useMemo(
-    () =>
-      `${access ?? 'none'}:${role ?? 'none'}:${clientNeed ?? 'none'}:${searchMode ?? 'none'}:${businessType ?? 'none'}`,
-    [access, businessType, clientNeed, role, searchMode],
+    () => `${access ?? 'none'}:${role ?? 'none'}:${clientNeed ?? 'none'}:${searchMode ?? 'none'}`,
+    [access, clientNeed, role, searchMode],
   )
 
   useEffect(() => {
@@ -172,15 +162,21 @@ export default function EntryQuiz({ initialIdentity = null }: { initialIdentity?
                     helper: 'Quero cadastrar meu negócio e organizar a agenda.',
                   },
                 ].map((option) => (
-                  <button
-                    key={option.key}
-                    type="button"
-                    onClick={() => setRole(option.key)}
-                    className="min-h-20 rounded-full bg-white/8 px-5 py-4 text-center text-white transition hover:bg-white/12 sm:min-h-24"
-                  >
-                    <span className="block text-sm font-semibold sm:text-base">{option.label}</span>
-                    <span className="mt-1 block text-xs leading-5 text-white/70 sm:text-sm">
-                      {option.helper}
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => {
+                    if (option.key === 'negocio') {
+                      router.push('/dono')
+                      return
+                    }
+                    setRole(option.key)
+                  }}
+                  className="min-h-20 rounded-full bg-white/8 px-5 py-4 text-center text-white transition hover:bg-white/12 sm:min-h-24"
+                >
+                  <span className="block text-sm font-semibold sm:text-base">{option.label}</span>
+                  <span className="mt-1 block text-xs leading-5 text-white/70 sm:text-sm">
+                    {option.helper}
                     </span>
                   </button>
                 ))}
@@ -250,46 +246,7 @@ export default function EntryQuiz({ initialIdentity = null }: { initialIdentity?
                 </div>
               </div>
             )
-          ) : businessType === null ? (
-            <div className="text-center">
-              <p className="text-xl font-semibold text-white sm:text-2xl md:text-[2rem]">
-                Que tipo de negócio você quer cadastrar?
-              </p>
-              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/72 sm:text-base">
-                Escolha uma categoria e eu sigo com o cadastro guiado.
-              </p>
-
-              <div className="mt-7 flex flex-wrap justify-center gap-2 sm:gap-3">
-                {businessTypeOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setBusinessType(option)}
-                    className="rounded-full bg-white/8 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/12 sm:px-5 sm:py-3"
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center">
-              <p className="text-xl font-semibold text-white sm:text-2xl md:text-[2rem]">Cadastro guiado do negócio</p>
-              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/72 sm:text-base">
-                Você escolheu <span className="font-semibold text-white">{businessType.toLowerCase()}</span>.
-                Agora basta entrar ou criar sua conta para continuar.
-              </p>
-
-              <div className="mx-auto mt-7 w-full max-w-[360px]">
-                <Link
-                  href="/login?mode=signup"
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] px-5 text-sm font-semibold text-white transition hover:opacity-90"
-                >
-                  Criar conta e continuar
-                </Link>
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
     </section>

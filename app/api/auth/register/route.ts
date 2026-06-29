@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { formatAddress, normalizeCep } from '@/lib/address'
 
 function normalizePhone(input: string) {
   return input.replace(/\D/g, '')
@@ -15,11 +16,25 @@ export async function POST(request: Request) {
       name?: string
       phone?: string
       password?: string
+      zip_code?: string
+      street?: string
+      number?: string
+      complement?: string
+      neighborhood?: string
+      city?: string
+      state?: string
     }
 
     const name = body.name?.trim() ?? ''
     const phoneDigits = normalizePhone(body.phone ?? '')
     const password = body.password ?? ''
+    const zipCode = normalizeCep(body.zip_code ?? '')
+    const street = body.street?.trim() ?? ''
+    const number = body.number?.trim() ?? ''
+    const complement = body.complement?.trim() ?? ''
+    const neighborhood = body.neighborhood?.trim() ?? ''
+    const city = body.city?.trim() ?? ''
+    const state = body.state?.trim() ?? ''
 
     if (name.length < 2) {
       return NextResponse.json({ error: 'Informe seu nome.' }, { status: 400 })
@@ -41,6 +56,22 @@ export async function POST(request: Request) {
       user_metadata: {
         full_name: name,
         phone: phoneDigits,
+        zip_code: zipCode || null,
+        street: street || null,
+        number: number || null,
+        complement: complement || null,
+        neighborhood: neighborhood || null,
+        city: city || null,
+        state: state || null,
+        address: formatAddress({
+          zip_code: zipCode || null,
+          street: street || null,
+          number: number || null,
+          complement: complement || null,
+          neighborhood: neighborhood || null,
+          city: city || null,
+          state: state || null,
+        }) || null,
       },
     })
 

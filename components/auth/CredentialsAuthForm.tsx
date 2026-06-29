@@ -4,12 +4,14 @@ import type { FormEvent } from 'react'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
+import AddressFields from '@/components/forms/AddressFields'
 import { createClient } from '@/lib/supabase/client'
 
 type Mode = 'login' | 'signup'
 
 type Props = {
   initialMode?: Mode
+  returnTo?: string
 }
 
 function normalizePhone(value: string) {
@@ -20,7 +22,7 @@ function phoneToEmail(phone: string) {
   return `phone-${normalizePhone(phone)}@ibeleza.local`
 }
 
-export default function CredentialsAuthForm({ initialMode = 'login' }: Props) {
+export default function CredentialsAuthForm({ initialMode = 'login', returnTo = '/' }: Props) {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>(initialMode)
   const [name, setName] = useState('')
@@ -42,6 +44,7 @@ export default function CredentialsAuthForm({ initialMode = 'login' }: Props) {
 
     const supabase = createClient()
     const email = phoneToEmail(phone)
+    const form = new FormData(event.currentTarget)
 
     try {
       if (isSignup) {
@@ -54,6 +57,13 @@ export default function CredentialsAuthForm({ initialMode = 'login' }: Props) {
             name,
             phone,
             password,
+            zip_code: String(form.get('zip_code') ?? ''),
+            street: String(form.get('street') ?? ''),
+            number: String(form.get('number') ?? ''),
+            complement: String(form.get('complement') ?? ''),
+            neighborhood: String(form.get('neighborhood') ?? ''),
+            city: String(form.get('city') ?? ''),
+            state: String(form.get('state') ?? ''),
           }),
         })
 
@@ -75,7 +85,7 @@ export default function CredentialsAuthForm({ initialMode = 'login' }: Props) {
       }
 
       router.refresh()
-      router.push('/')
+      router.push(returnTo)
     } finally {
       setBusy(false)
     }
@@ -90,7 +100,9 @@ export default function CredentialsAuthForm({ initialMode = 'login' }: Props) {
           className="mx-auto h-auto w-[132px] max-w-full object-contain sm:w-[156px]"
         />
         <p className="mt-3 text-sm leading-6 text-white/68 sm:text-base">
-          Use nome, telefone e senha para entrar ou criar sua conta.
+          {isSignup
+            ? 'Use nome, telefone, endereço e senha para criar sua conta.'
+            : 'Use nome, telefone e senha para entrar ou criar sua conta.'}
         </p>
       </div>
 
@@ -140,6 +152,13 @@ export default function CredentialsAuthForm({ initialMode = 'login' }: Props) {
             className="w-full rounded-[8px] border border-white/10 bg-[#11172B] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
           />
         </label>
+
+        {isSignup ? (
+          <AddressFields
+            title="Endereço de cadastro"
+            description="CEP para preencher rua, bairro, cidade e estado automaticamente."
+          />
+        ) : null}
 
         <label className="block">
           <span className="mb-2 block text-sm font-medium text-white/80">Senha</span>

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { updateEstablishmentSettings } from '@/actions/admin'
 import Button from '@/components/ui/Button'
 import type { Establishment } from '@/database.types'
+import AddressFields from '@/components/forms/AddressFields'
 
 type BusinessHours = Record<string, { open: string; close: string } | null>
 
@@ -64,12 +65,6 @@ export default function EstablishmentSettingsForm({
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
         <input
-          name="address"
-          defaultValue={establishment.address ?? ''}
-          placeholder="Endereço"
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-        />
-        <input
           name="slots_per_schedule"
           type="number"
           min="1"
@@ -88,6 +83,20 @@ export default function EstablishmentSettingsForm({
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
       </div>
+
+      <AddressFields
+        title="Endereço do negócio"
+        description="Use o CEP para preencher rua, bairro, cidade e estado automaticamente."
+        initialValues={{
+          zip_code: establishment.zip_code ?? null,
+          street: establishment.street ?? null,
+          number: establishment.number ?? null,
+          complement: establishment.complement ?? null,
+          neighborhood: establishment.neighborhood ?? null,
+          city: establishment.city ?? null,
+          state: establishment.state ?? null,
+        }}
+      />
 
       <div className="grid gap-2">
         {DAYS.map(([key, label]) => {

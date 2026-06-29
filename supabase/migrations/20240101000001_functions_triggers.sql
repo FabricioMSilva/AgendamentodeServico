@@ -58,14 +58,35 @@ BEGIN
     v_role := 'admin';
   END IF;
 
-  INSERT INTO public.profiles (id, role, name, phone, email, avatar_url)
+  INSERT INTO public.profiles (
+    id,
+    role,
+    name,
+    phone,
+    email,
+    avatar_url,
+    zip_code,
+    street,
+    number,
+    complement,
+    neighborhood,
+    city,
+    state
+  )
   VALUES (
     NEW.id,
     v_role,
     COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
     NEW.raw_user_meta_data->>'phone',
     NEW.email,
-    NEW.raw_user_meta_data->>'avatar_url'
+    NEW.raw_user_meta_data->>'avatar_url',
+    NEW.raw_user_meta_data->>'zip_code',
+    NEW.raw_user_meta_data->>'street',
+    NEW.raw_user_meta_data->>'number',
+    NEW.raw_user_meta_data->>'complement',
+    NEW.raw_user_meta_data->>'neighborhood',
+    NEW.raw_user_meta_data->>'city',
+    NEW.raw_user_meta_data->>'state'
   );
 
   IF v_establishment_id IS NOT NULL THEN

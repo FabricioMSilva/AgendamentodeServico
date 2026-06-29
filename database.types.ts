@@ -41,6 +41,13 @@ export interface Database {
           phone: string | null
           email: string
           avatar_url: string | null
+          zip_code: string | null
+          street: string | null
+          number: string | null
+          complement: string | null
+          neighborhood: string | null
+          city: string | null
+          state: string | null
           created_at: string
         }
         Insert: {
@@ -50,6 +57,13 @@ export interface Database {
           phone?: string | null
           email: string
           avatar_url?: string | null
+          zip_code?: string | null
+          street?: string | null
+          number?: string | null
+          complement?: string | null
+          neighborhood?: string | null
+          city?: string | null
+          state?: string | null
           created_at?: string
         }
         Update: {
@@ -59,6 +73,13 @@ export interface Database {
           phone?: string | null
           email?: string
           avatar_url?: string | null
+          zip_code?: string | null
+          street?: string | null
+          number?: string | null
+          complement?: string | null
+          neighborhood?: string | null
+          city?: string | null
+          state?: string | null
           created_at?: string
         }
         Relationships: [
@@ -79,6 +100,13 @@ export interface Database {
           name: string
           address: string | null
           contact: string | null
+          zip_code: string | null
+          street: string | null
+          number: string | null
+          complement: string | null
+          neighborhood: string | null
+          city: string | null
+          state: string | null
           whatsapp_phone: string | null
           logo_url: string | null
           business_hours: Json
@@ -95,6 +123,13 @@ export interface Database {
           name: string
           address?: string | null
           contact?: string | null
+          zip_code?: string | null
+          street?: string | null
+          number?: string | null
+          complement?: string | null
+          neighborhood?: string | null
+          city?: string | null
+          state?: string | null
           whatsapp_phone?: string | null
           logo_url?: string | null
           business_hours?: Json
@@ -111,6 +146,13 @@ export interface Database {
           name?: string
           address?: string | null
           contact?: string | null
+          zip_code?: string | null
+          street?: string | null
+          number?: string | null
+          complement?: string | null
+          neighborhood?: string | null
+          city?: string | null
+          state?: string | null
           whatsapp_phone?: string | null
           logo_url?: string | null
           business_hours?: Json
