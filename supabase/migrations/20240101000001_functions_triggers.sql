@@ -58,11 +58,12 @@ BEGIN
     v_role := 'admin';
   END IF;
 
-  INSERT INTO public.profiles (id, role, name, email, avatar_url)
+  INSERT INTO public.profiles (id, role, name, phone, email, avatar_url)
   VALUES (
     NEW.id,
     v_role,
     COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
+    NEW.raw_user_meta_data->>'phone',
     NEW.email,
     NEW.raw_user_meta_data->>'avatar_url'
   );

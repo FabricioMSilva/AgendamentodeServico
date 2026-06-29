@@ -1,0 +1,27 @@
+<svg width="1821" height="864" viewBox="0 0 1821 864" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="IBeleza">
+  <defs>
+    <linearGradient id="ib-circle" x1="199.5" y1="163.5" x2="561.5" y2="603.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00C4CC"/>
+      <stop offset="0.5" stop-color="#6A00FF"/>
+      <stop offset="1" stop-color="#FF007F"/>
+    </linearGradient>
+    <linearGradient id="ib-word" x1="650" y1="322" x2="1620" y2="540" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF007F"/>
+      <stop offset="0.5" stop-color="#E63B8E"/>
+      <stop offset="1" stop-color="#6A00FF"/>
+    </linearGradient>
+    <linearGradient id="ib-shine" x1="247" y1="196" x2="520" y2="436" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9E9FF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#D9E9FF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="361" cy="431" r="218" fill="url(#ib-circle)"/>
+  <circle cx="306" cy="324" r="58" fill="url(#ib-shine)"/>
+  <path d="M317 304.5C317 289.82 328.82 278 343.5 278H360.5C372.7 278 382.5 287.8 382.5 300V536C382.5 548.2 372.7 558 360.5 558H343.5C328.82 558 317 546.18 317 531.5V304.5Z" fill="white"/>
+  <path d="M419 292H511.5C566.35 292 608 330.22 608 386.5C608 431.25 584.2 468.16 547 482.2L617 558H522.5L459 489H424V558H352V292H419ZM424 420H496C519.2 420 535 404.82 535 384.5C535 363.68 519.2 348 496 348H424V420Z" fill="white"/>
+  <path d="M681 322H752V558H681V322Z" fill="url(#ib-word)"/>
+  <path d="M812 322H909C992.8 322 1043 369.78 1043 441C1043 512.22 992.8 558 909 558H812V322ZM883 374V506H907C949.4 506 969 482.6 969 441C969 399.4 949.4 374 907 374H883Z" fill="url(#ib-word)"/>
+  <path d="M1167 322H1238V558H1167V322Z" fill="url(#ib-word)"/>
+  <path d="M1380 322H1450C1504.85 322 1540 349.3 1540 390.5C1540 424.56 1519 448.7 1486 456.5L1549 558H1469L1417 464H1380V558H1309V322H1380ZM1380 426H1440C1464.6 426 1480 412.1 1480 391.5C1480 370.9 1464.6 357 1440 357H1380V426Z" fill="url(#ib-word)"/>
+  <path d="M1637 322H1708V558H1637V322Z" fill="url(#ib-word)"/>
+</svg>

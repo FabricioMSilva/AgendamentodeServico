@@ -1,13 +1,13 @@
 export default function BlockedScreen({ name }: { name: string }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#ffffff_0%,#f8f3ff_100%)] px-5">
-      <div className="w-full max-w-sm space-y-4 rounded-[8px] border border-[#ece4f7] bg-white p-8 text-center shadow-[0_18px_50px_rgba(106,0,255,0.08)]">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ff007f_0%,#6a00ff_100%)] text-2xl text-white">
+    <main className="flex min-h-screen items-center justify-center bg-[#1A2033] px-5">
+      <div className="w-full max-w-sm space-y-4 rounded-[8px] bg-white/8 p-8 text-center ring-1 ring-white/10">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[8px] bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-2xl text-white shadow-[0_16px_30px_rgba(106,0,255,0.26)]">
           !
         </div>
-        <h1 className="text-xl font-bold text-black">Indisponível no momento</h1>
-        <p className="text-base font-medium text-[#3a3a3a]">{name}</p>
-        <p className="text-sm text-[#6a6a6a]">
+        <h1 className="font-brand text-2xl text-white">Indisponível no momento</h1>
+        <p className="text-base font-medium text-white/82">{name}</p>
+        <p className="text-sm leading-6 text-white/62">
           Este estabelecimento está temporariamente indisponível. Entre em contato diretamente com a equipe.
         </p>
       </div>

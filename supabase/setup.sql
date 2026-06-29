@@ -17,6 +17,7 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role text not null default 'customer' check (role in ('admin', 'customer')),
   name text,
+  phone text unique,
   email text not null,
   avatar_url text,
   created_at timestamptz not null default now()
@@ -62,6 +63,9 @@ create table if not exists public.appointments (
 
 create index if not exists idx_profiles_email
   on public.profiles (email);
+
+create index if not exists idx_profiles_phone
+  on public.profiles (phone);
 
 create index if not exists idx_establishments_admin_id
   on public.establishments (admin_id);
@@ -161,11 +165,12 @@ begin
     v_role := 'admin';
   end if;
 
-  insert into public.profiles (id, role, name, email, avatar_url)
+  insert into public.profiles (id, role, name, phone, email, avatar_url)
   values (
     new.id,
     v_role,
     coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    new.raw_user_meta_data->>'phone',
     new.email,
     new.raw_user_meta_data->>'avatar_url'
   )
@@ -173,6 +178,7 @@ begin
   set
     role = excluded.role,
     name = excluded.name,
+    phone = excluded.phone,
     email = excluded.email,
     avatar_url = excluded.avatar_url;
 

@@ -38,6 +38,7 @@ export interface Database {
           id: string
           role: UserRole
           name: string | null
+          phone: string | null
           email: string
           avatar_url: string | null
           created_at: string
@@ -46,6 +47,7 @@ export interface Database {
           id: string
           role?: UserRole
           name?: string | null
+          phone?: string | null
           email: string
           avatar_url?: string | null
           created_at?: string
@@ -54,6 +56,7 @@ export interface Database {
           id?: string
           role?: UserRole
           name?: string | null
+          phone?: string | null
           email?: string
           avatar_url?: string | null
           created_at?: string

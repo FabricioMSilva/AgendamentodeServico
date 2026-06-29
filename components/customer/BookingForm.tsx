@@ -166,34 +166,45 @@ export default function BookingForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[1fr_360px]">
+    <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
       <section className="space-y-5">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setCategory('Todos')}
-            className={`inline-flex min-h-10 items-center rounded-full px-4 text-sm font-medium transition ${
-              category === 'Todos'
-                ? 'bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white shadow-[0_12px_28px_rgba(106,0,255,0.16)]'
-                : 'bg-white text-[#524a43] ring-1 ring-[#eadfd5] hover:bg-[#faf8ff]'
-            }`}
-          >
-            Todos
-          </button>
-          {categories.map((item) => (
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#8b5f49]">
+              Procedimentos
+            </p>
+            <p className="mt-1 text-sm text-[#75685f]">
+              Toque em um item para montar seu atendimento.
+            </p>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-1">
             <button
-              key={item}
               type="button"
-              onClick={() => setCategory(item)}
-              className={`inline-flex min-h-10 items-center rounded-full px-4 text-sm font-medium transition ${
-                category === item
+              onClick={() => setCategory('Todos')}
+              className={`inline-flex min-h-10 shrink-0 items-center rounded-full px-4 text-sm font-medium transition ${
+                category === 'Todos'
                   ? 'bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white shadow-[0_12px_28px_rgba(106,0,255,0.16)]'
                   : 'bg-white text-[#524a43] ring-1 ring-[#eadfd5] hover:bg-[#faf8ff]'
               }`}
             >
-              {item}
+              Todos
             </button>
-          ))}
+            {categories.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setCategory(item)}
+                className={`inline-flex min-h-10 shrink-0 items-center rounded-full px-4 text-sm font-medium transition ${
+                  category === item
+                    ? 'bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white shadow-[0_12px_28px_rgba(106,0,255,0.16)]'
+                    : 'bg-white text-[#524a43] ring-1 ring-[#eadfd5] hover:bg-[#faf8ff]'
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="grid gap-3">
@@ -206,8 +217,8 @@ export default function BookingForm({
                 onClick={() => toggleService(service.id)}
                 className={`grid gap-4 rounded-[8px] border p-4 text-left transition sm:grid-cols-[96px_1fr_auto] ${
                   selected
-                    ? 'border-[#22201d] bg-[#fffaf5]'
-                    : 'border-[#eadfd5] bg-white hover:border-[#cbb7a7]'
+                    ? 'border-[#22201d] bg-[#fffaf5] shadow-[0_10px_30px_rgba(34,32,29,0.08)]'
+                    : 'border-[#eadfd5] bg-white hover:border-[#cbb7a7] hover:shadow-[0_10px_24px_rgba(34,32,29,0.05)]'
                 }`}
               >
                 <div className="h-24 overflow-hidden rounded-[6px] bg-[#f3e7dd]">
@@ -252,7 +263,7 @@ export default function BookingForm({
         </div>
       </section>
 
-      <aside className="h-fit rounded-[8px] border border-[#eadfd5] bg-white p-5 shadow-sm">
+      <aside className="h-fit rounded-[8px] border border-[#eadfd5] bg-white p-5 shadow-sm lg:sticky lg:top-6">
         <h2 className="text-lg font-semibold text-[#22201d]">Seu horário</h2>
 
         {success && (
@@ -302,7 +313,7 @@ export default function BookingForm({
             }}
             disabled={isDayDisabled}
             fromDate={dayjs().toDate()}
-            classNames={{ root: 'mt-2 rounded-[8px] border border-[#eadfd5] p-3 text-sm' }}
+            classNames={{ root: 'mt-2 rounded-[8px] border border-[#eadfd5] bg-[#fffcfa] p-3 text-sm' }}
           />
         </div>
 
@@ -338,19 +349,19 @@ export default function BookingForm({
             name="customer_name"
             placeholder="Seu nome"
             required
-            className="rounded-[6px] border border-[#eadfd5] px-3 py-2 text-sm outline-none focus:border-[#22201d]"
+            className="rounded-[8px] border border-[#eadfd5] px-3 py-2 text-sm outline-none focus:border-[#22201d]"
           />
           <input
             name="customer_phone"
             placeholder="WhatsApp"
             required
-            className="rounded-[6px] border border-[#eadfd5] px-3 py-2 text-sm outline-none focus:border-[#22201d]"
+            className="rounded-[8px] border border-[#eadfd5] px-3 py-2 text-sm outline-none focus:border-[#22201d]"
           />
           <textarea
             name="notes"
             placeholder="Observação para o estabelecimento"
             rows={3}
-            className="rounded-[6px] border border-[#eadfd5] px-3 py-2 text-sm outline-none focus:border-[#22201d]"
+            className="rounded-[8px] border border-[#eadfd5] px-3 py-2 text-sm outline-none focus:border-[#22201d]"
           />
         </div>
 
@@ -359,7 +370,7 @@ export default function BookingForm({
           variant="primary"
           disabled={pending || !selectedDay || !selectedTime || cart.length === 0}
           loading={pending}
-          className="mt-5 w-full rounded-[6px] bg-[#22201d] py-3 hover:bg-[#3a332e]"
+          className="mt-5 w-full rounded-[8px] bg-[#22201d] py-3 hover:bg-[#3a332e]"
         >
           Solicitar agendamento
         </Button>

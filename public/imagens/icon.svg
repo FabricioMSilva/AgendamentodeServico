@@ -1,0 +1,69 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e91e8c" />
+      <stop offset="35%" stop-color="#c2185b" />
+      <stop offset="65%" stop-color="#7b1fa2" />
+      <stop offset="100%" stop-color="#1565c0" />
+    </linearGradient>
+    <radialGradient id="shineGradient" cx="35%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35" />
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="60%" stop-color="#000000" stop-opacity="0" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.25" />
+    </radialGradient>
+    <linearGradient id="swirlGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05" />
+    </linearGradient>
+    <linearGradient id="highlightGradient" x1="0%" y1="0%" x2="70%" y2="70%">
+      <stop offset="0%" stop-color="#ff82c8" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#ff82c8" stop-opacity="0" />
+    </linearGradient>
+    <radialGradient id="blueAccent" cx="75%" cy="75%" r="40%">
+      <stop offset="0%" stop-color="#1e88e5" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#1e88e5" stop-opacity="0" />
+    </radialGradient>
+    <filter id="textShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+    <filter id="swirlGlow" x="-5%" y="-5%" width="110%" height="110%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+    </filter>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#bgGradient)" />
+  <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#innerGlow)" />
+  <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#blueAccent)" />
+  <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#highlightGradient)" />
+  <path
+    d="M 340 120 C 420 140, 440 220, 420 300 C 400 380, 340 420, 260 420 C 180 420, 120 380, 100 310"
+    fill="none"
+    stroke="#ffffff"
+    stroke-opacity="0.3"
+    stroke-width="18"
+    stroke-linecap="round"
+    filter="url(#swirlGlow)"
+  />
+  <path
+    d="M 340 120 C 420 140, 440 220, 420 300 C 400 380, 340 420, 260 420 C 180 420, 120 380, 100 310"
+    fill="none"
+    stroke="url(#swirlGradient)"
+    stroke-width="14"
+    stroke-linecap="round"
+  />
+  <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#shineGradient)" />
+  <g filter="url(#textShadow)">
+    <circle cx="175" cy="185" r="18" fill="#ffffff" />
+    <path d="M 155 225 L 165 215 L 195 215 L 205 225 L 185 360 L 175 370 L 150 370 L 145 360 Z" fill="#ffffff" />
+  </g>
+  <g filter="url(#textShadow)">
+    <path
+      d="M 230 150 L 310 150 C 365 150, 395 175, 395 215 C 395 245, 378 265, 350 272 C 385 280, 405 305, 405 340 C 405 385, 370 410, 315 410 L 230 410 Z M 280 190 L 280 255 L 310 255 C 340 255, 355 242, 355 222 C 355 202, 340 190, 310 190 Z M 280 290 L 280 370 L 315 370 C 350 370, 365 355, 365 335 C 365 312, 348 290, 315 290 Z"
+      fill="#ffffff"
+      fill-rule="evenodd"
+    />
+  </g>
+</svg>

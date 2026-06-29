@@ -14,10 +14,14 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id          UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   role        TEXT        NOT NULL CHECK (role IN ('admin', 'customer')) DEFAULT 'customer',
   name        TEXT,
+  phone       TEXT UNIQUE,
   email       TEXT        NOT NULL,
   avatar_url  TEXT,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_profiles_phone
+  ON public.profiles (phone);
 
 CREATE TABLE IF NOT EXISTS public.establishments (
   id                 UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),

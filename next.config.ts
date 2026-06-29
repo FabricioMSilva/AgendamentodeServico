@@ -7,7 +7,7 @@ const withPWA = require('next-pwa')({
   skipWaiting: true,
 })
 
-// CSP: only allow scripts/styles from self and Google OAuth iframe.
+// CSP: only allow scripts/styles from self and Supabase.
 // 'unsafe-inline' for styles is required by Tailwind + react-day-picker.
 // Next/React need 'unsafe-eval' in development for enhanced debugging.
 const isDev = process.env.NODE_ENV === 'development'
@@ -16,10 +16,10 @@ const ContentSecurityPolicy = `
   default-src 'self';
   script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''};
   style-src 'self' 'unsafe-inline';
-  img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com;
+  img-src 'self' data: blob: https://*.supabase.co;
   font-src 'self';
-  connect-src 'self' https://*.supabase.co https://accounts.google.com wss://*.supabase.co;
-  frame-src https://accounts.google.com;
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co;
+  frame-src 'self';
   object-src 'none';
   base-uri 'self';
   form-action 'self';
@@ -46,7 +46,6 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '*.supabase.co', pathname: '/storage/v1/object/public/**' },
-      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
     ],
   },
 }
