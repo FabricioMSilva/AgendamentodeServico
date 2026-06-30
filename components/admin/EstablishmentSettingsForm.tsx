@@ -27,6 +27,8 @@ export default function EstablishmentSettingsForm({
   const [message, setMessage] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string[]>>({})
   const hours = (establishment.business_hours as BusinessHours) ?? {}
+  const inputClass =
+    'rounded-[8px] border border-white/10 bg-[#11172B] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25'
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -50,19 +52,19 @@ export default function EstablishmentSettingsForm({
           defaultValue={establishment.name}
           placeholder="Nome do estabelecimento"
           required
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className={inputClass}
         />
         <input
           name="contact"
           defaultValue={establishment.contact ?? ''}
           placeholder="Telefone visível"
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className={inputClass}
         />
         <input
           name="whatsapp_phone"
           defaultValue={establishment.whatsapp_phone ?? ''}
           placeholder="WhatsApp para confirmações"
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className={inputClass}
         />
         <input
           name="slots_per_schedule"
@@ -71,7 +73,7 @@ export default function EstablishmentSettingsForm({
           max="48"
           defaultValue={establishment.slots_per_schedule}
           placeholder="Encaixes por dia"
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className={inputClass}
         />
         <input
           name="reminder_hours_before"
@@ -80,7 +82,7 @@ export default function EstablishmentSettingsForm({
           max="72"
           defaultValue={establishment.reminder_hours_before}
           placeholder="Lembrete antes em horas"
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className={inputClass}
         />
       </div>
 
@@ -96,6 +98,7 @@ export default function EstablishmentSettingsForm({
           city: establishment.city ?? null,
           state: establishment.state ?? null,
         }}
+        tone="dark"
       />
 
       <div className="grid gap-2">
@@ -104,9 +107,9 @@ export default function EstablishmentSettingsForm({
           return (
             <div
               key={key}
-              className="grid gap-3 rounded-lg border border-gray-200 p-3 sm:grid-cols-[120px_1fr_1fr]"
+              className="grid gap-3 rounded-[8px] border border-white/10 bg-white/5 p-3 sm:grid-cols-[120px_1fr_1fr]"
             >
-              <label className="flex items-center gap-2 text-sm font-medium">
+              <label className="flex items-center gap-2 text-sm font-medium text-white/80">
                 <input
                   name={`day_${key}_enabled`}
                   type="checkbox"
@@ -118,13 +121,13 @@ export default function EstablishmentSettingsForm({
                 name={`day_${key}_open`}
                 type="time"
                 defaultValue={day?.open ?? '09:00'}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className={inputClass}
               />
               <input
                 name={`day_${key}_close`}
                 type="time"
                 defaultValue={day?.close ?? '18:00'}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className={inputClass}
               />
             </div>
           )
@@ -132,7 +135,7 @@ export default function EstablishmentSettingsForm({
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-white/55">
           O lembrete 12h antes fica pronto para automação via WhatsApp.
         </p>
         <Button type="submit" loading={pending}>
@@ -140,8 +143,8 @@ export default function EstablishmentSettingsForm({
         </Button>
       </div>
 
-      {message && <p className="text-sm text-green-700">{message}</p>}
-      {errors._form && <p className="text-sm text-red-600">{errors._form.join(', ')}</p>}
+      {message && <p className="text-sm text-emerald-100">{message}</p>}
+      {errors._form && <p className="text-sm text-[#ff8ea8]">{errors._form.join(', ')}</p>}
     </form>
   )
 }

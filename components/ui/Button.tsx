@@ -14,7 +14,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary:
     'bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white shadow-[0_12px_28px_rgba(106,0,255,0.22)] hover:shadow-[0_16px_32px_rgba(106,0,255,0.28)]',
   secondary:
-    'bg-white text-black ring-1 ring-black/10 hover:bg-[#faf8ff]',
+    'bg-white/8 text-white ring-1 ring-white/12 hover:bg-white/12',
   ghost:
     'bg-white/8 text-white ring-1 ring-white/12 hover:bg-white/12',
   danger:
@@ -56,7 +56,7 @@ export default function Button({
           className={[
             'flex h-7 w-7 items-center justify-center rounded-full',
             variant === 'secondary'
-              ? 'bg-black/5 text-black ring-1 ring-black/10'
+              ? 'bg-white/12 text-white ring-1 ring-white/20'
               : 'bg-white/12 text-white ring-1 ring-white/20',
           ].join(' ')}
         >

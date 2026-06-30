@@ -22,6 +22,18 @@ function phoneToEmail(phone: string) {
   return `phone-${normalizePhone(phone)}@ibeleza.local`
 }
 
+function friendlyAuthError(message: string) {
+  if (
+    message.toLowerCase().includes('fetch failed') ||
+    message.toLowerCase().includes('failed to fetch') ||
+    message.toLowerCase().includes('networkerror')
+  ) {
+    return 'Não consegui conectar ao Supabase. Confira as chaves do .env.local e reinicie o servidor.'
+  }
+
+  return message
+}
+
 export default function CredentialsAuthForm({ initialMode = 'login', returnTo = '/' }: Props) {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>(initialMode)
@@ -80,12 +92,16 @@ export default function CredentialsAuthForm({ initialMode = 'login', returnTo = 
       })
 
       if (error) {
-        setMessage(error.message)
+        setMessage(friendlyAuthError(error.message))
         return
       }
 
       router.refresh()
       router.push(returnTo)
+    } catch (error) {
+      setMessage(
+        friendlyAuthError(error instanceof Error ? error.message : 'Não foi possível concluir o cadastro.'),
+      )
     } finally {
       setBusy(false)
     }
@@ -112,7 +128,9 @@ export default function CredentialsAuthForm({ initialMode = 'login', returnTo = 
           onClick={() => setMode('login')}
           className={[
             'rounded-full px-4 py-2 text-sm font-semibold transition',
-            !isSignup ? 'bg-white text-[#1A2033]' : 'text-white/76 hover:text-white',
+            !isSignup
+              ? 'bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white shadow-[0_10px_24px_rgba(106,0,255,0.2)]'
+              : 'text-white/76 hover:text-white',
           ].join(' ')}
         >
           Entrar
@@ -122,7 +140,9 @@ export default function CredentialsAuthForm({ initialMode = 'login', returnTo = 
           onClick={() => setMode('signup')}
           className={[
             'rounded-full px-4 py-2 text-sm font-semibold transition',
-            isSignup ? 'bg-white text-[#1A2033]' : 'text-white/76 hover:text-white',
+            isSignup
+              ? 'bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white shadow-[0_10px_24px_rgba(106,0,255,0.2)]'
+              : 'text-white/76 hover:text-white',
           ].join(' ')}
         >
           Criar conta
@@ -157,6 +177,7 @@ export default function CredentialsAuthForm({ initialMode = 'login', returnTo = 
           <AddressFields
             title="Endereço de cadastro"
             description="CEP para preencher rua, bairro, cidade e estado automaticamente."
+            tone="dark"
           />
         ) : null}
 

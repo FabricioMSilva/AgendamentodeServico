@@ -58,27 +58,27 @@ function AppointmentCard({
     : null
 
   return (
-    <div className="border border-gray-200 rounded-xl p-4 space-y-1 bg-white">
+    <div className="space-y-1 rounded-[8px] border border-white/10 bg-[#11172B] p-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold truncate">
+        <p className="truncate text-sm font-semibold text-white">
           {appt.customer_name ?? appt.profiles?.name ?? appt.profiles?.email ?? 'Cliente'}
         </p>
         <Badge status={appt.status} />
       </div>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-white/60">
         {appt.appointment_items.length > 0
           ? appt.appointment_items.map((item) => item.service_name).join(' + ')
           : appt.services?.name}
       </p>
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-white/45">
         {dayjs(appt.scheduled_at).format('ddd, D MMM [às] HH:mm')} · {appt.total_duration_minutes} min
       </p>
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-white/45">
         {money(appt.total_price)}
         {appt.customer_phone ? ` · ${appt.customer_phone}` : ''}
       </p>
       {actionError && (
-        <p className="text-xs text-red-600 pt-1">{actionError}</p>
+        <p className="pt-1 text-xs text-[#ff8ea8]">{actionError}</p>
       )}
       <div className="pt-2 flex flex-wrap gap-2">
         {appt.customer_phone && (
@@ -86,7 +86,7 @@ function AppointmentCard({
             href={whatsappUrl(appt.customer_phone, appt)}
             target="_blank"
             rel="noreferrer"
-            className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+            className="rounded-[8px] bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-100 transition hover:bg-emerald-400/15"
           >
             WhatsApp
           </a>
@@ -113,9 +113,9 @@ function ActionButton({
   const [loading, setLoading] = useState(false)
 
   const colors: Record<ActionVariant, string> = {
-    primary: 'bg-black text-white hover:bg-gray-800',
-    danger: 'bg-red-100 text-red-700 hover:bg-red-200',
-    success: 'bg-green-100 text-green-700 hover:bg-green-200',
+    primary: 'bg-white/8 text-white hover:bg-white/12',
+    danger: 'bg-[#ff8ea8]/12 text-[#ff8ea8] hover:bg-[#ff8ea8]/18',
+    success: 'bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/15',
   }
 
   return (
@@ -127,7 +127,7 @@ function ActionButton({
         if (result?.error) onError(result.error)
         setLoading(false)
       }}
-      className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 ${colors[variant]}`}
+      className={`rounded-[8px] px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${colors[variant]}`}
     >
       {loading ? '...' : label}
     </button>
@@ -146,10 +146,10 @@ export default function AppointmentBoard({
   completedServices,
 }: AppointmentBoardProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
       {/* Coluna 1: Aguardando Aprovação */}
       <div>
-        <h3 className="text-sm font-semibold text-amber-700 mb-3">
+        <h3 className="mb-3 text-sm font-semibold text-amber-200">
           Aguardando Aprovação ({pendingApproval.length})
         </h3>
         <div className="space-y-3">
@@ -165,7 +165,7 @@ export default function AppointmentBoard({
                     onClick={() => confirmAppointment(a.id)}
                   />
                   <ActionButton
-                    label="Cancelar"
+                    label="Recusar"
                     variant="danger"
                     onClick={() => finalizeAppointment(a.id, 'cancelled')}
                   />
@@ -174,14 +174,14 @@ export default function AppointmentBoard({
             />
           ))}
           {pendingApproval.length === 0 && (
-            <p className="text-sm text-gray-400">Nenhuma solicitação pendente.</p>
+            <p className="text-sm text-white/45">Nenhuma solicitação pendente.</p>
           )}
         </div>
       </div>
 
       {/* Coluna 2: Confirmados */}
       <div>
-        <h3 className="text-sm font-semibold text-blue-700 mb-3">
+        <h3 className="mb-3 text-sm font-semibold text-sky-200">
           Confirmados ({confirmed.length})
         </h3>
         <div className="space-y-3">
@@ -211,14 +211,14 @@ export default function AppointmentBoard({
             />
           ))}
           {confirmed.length === 0 && (
-            <p className="text-sm text-gray-400">Nenhum agendamento confirmado.</p>
+            <p className="text-sm text-white/45">Nenhum agendamento confirmado.</p>
           )}
         </div>
       </div>
 
       {/* Coluna 3: Serviços Concluídos */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-600 mb-3">
+        <h3 className="mb-3 text-sm font-semibold text-white/68">
           Serviços Concluídos ({completedServices.length})
         </h3>
         <div className="space-y-3">
@@ -226,7 +226,7 @@ export default function AppointmentBoard({
             <AppointmentCard key={a.id} appt={a} />
           ))}
           {completedServices.length === 0 && (
-            <p className="text-sm text-gray-400">Nenhum serviço concluído ainda.</p>
+            <p className="text-sm text-white/45">Nenhum serviço concluído ainda.</p>
           )}
         </div>
       </div>

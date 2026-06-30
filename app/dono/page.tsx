@@ -83,14 +83,14 @@ export default async function OwnerEntryPage() {
             {isAuthenticated ? (
               <OwnerSetupForm />
             ) : (
-              <div className="rounded-[8px] bg-white p-6 text-[#22201d] shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#8b5f49]">
+              <div className="rounded-[8px] bg-white/6 p-6 text-white shadow-[0_18px_50px_rgba(0,0,0,0.18)] ring-1 ring-white/10">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/55">
                   Comece por aqui
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold">
                   Entre ou crie sua conta para verificar seu negócio
                 </h2>
-                <p className="mt-3 text-sm leading-6 text-[#6d625b]">
+                <p className="mt-3 text-sm leading-6 text-white/68">
                   Depois do login, o sistema procura automaticamente seu estabelecimento. Se houver cadastro,
                   você já cai no painel do dono.
                 </p>
@@ -98,7 +98,7 @@ export default async function OwnerEntryPage() {
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
                   <Link
                     href="/login?mode=login&next=/dono"
-                    className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#22201d] px-5 text-sm font-semibold text-white transition hover:bg-[#3a332e]"
+                    className="inline-flex min-h-12 items-center justify-center rounded-full bg-white/8 px-5 text-sm font-semibold text-white transition hover:bg-white/12"
                   >
                     Entrar
                   </Link>

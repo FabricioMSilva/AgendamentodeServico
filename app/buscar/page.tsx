@@ -159,6 +159,8 @@ export default async function SearchPage({
   const reservedSlots: ReservedSlot[] = []
   if (sorted.length > 0) {
     const db = createAdminClient()
+    const availabilityEnd = new Date()
+    availabilityEnd.setDate(availabilityEnd.getDate() + 180)
     const { data: reservedRaw } = await db
       .from('appointments')
       .select('establishment_id, scheduled_at, total_duration_minutes')
@@ -168,7 +170,9 @@ export default async function SearchPage({
       )
       .in('status', ['pending', 'confirmed', 'checked_in'])
       .gte('scheduled_at', new Date().toISOString())
+      .lt('scheduled_at', availabilityEnd.toISOString())
       .order('scheduled_at', { ascending: true })
+      .limit(1000)
 
     reservedSlots.push(...((reservedRaw ?? []) as ReservedSlot[]))
   }
@@ -283,7 +287,7 @@ export default async function SearchPage({
                         {nextSlots?.slots.map((slot) => (
                           <span
                             key={slot}
-                            className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-[#1A2033]"
+                            className="rounded-full bg-white/10 px-3 py-2 text-xs font-semibold text-white ring-1 ring-white/10"
                           >
                             {slot}
                           </span>

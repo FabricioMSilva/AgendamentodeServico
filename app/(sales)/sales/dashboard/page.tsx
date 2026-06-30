@@ -11,43 +11,44 @@ export default async function SalesDashboard() {
     .order('created_at', { ascending: false })
 
   return (
-    <main className="max-w-5xl mx-auto p-6 space-y-8">
+    <main className="min-h-screen bg-[#1A2033] px-4 py-8 text-white sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl space-y-8">
       <header>
-        <h1 className="text-2xl font-bold">Cadastro de Negócios</h1>
-        <p className="text-sm text-gray-500 mt-1">Gerencie salões, clínicas e espaços de saúde e beleza</p>
+        <h1 className="text-2xl font-bold text-white">Cadastro de Negócios</h1>
+        <p className="mt-1 text-sm text-white/60">Gerencie salões, clínicas e espaços de saúde e beleza</p>
       </header>
 
       <section>
-        <h2 className="text-lg font-semibold mb-4">Novo estabelecimento</h2>
+        <h2 className="mb-4 text-lg font-semibold text-white">Novo estabelecimento</h2>
         <CreateEstablishmentForm />
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold mb-4">Todos os estabelecimentos</h2>
-        <div className="divide-y rounded-xl border">
+        <h2 className="mb-4 text-lg font-semibold text-white">Todos os estabelecimentos</h2>
+        <div className="divide-y divide-white/10 rounded-[8px] border border-white/10 bg-white/6">
           {establishments?.map((e: any) => {
             const blockAction = async () => {
               'use server'
               await setEstablishmentBlocked(e.id, !e.is_blocked)
             }
             return (
-              <div key={e.id} className="flex items-center justify-between p-4">
+              <div key={e.id} className="flex items-center justify-between gap-4 p-4">
                 <div>
-                  <p className="font-medium">{e.name}</p>
-                  <p className="text-sm text-gray-500">/{e.slug} · {e.owner_email}</p>
+                  <p className="font-medium text-white">{e.name}</p>
+                  <p className="text-sm text-white/55">/{e.slug} · {e.owner_email}</p>
                   {e.admin_id ? (
-                    <span className="text-xs text-green-600">Linked ✓</span>
+                    <span className="text-xs text-emerald-100">Linked</span>
                   ) : (
-                    <span className="text-xs text-amber-600">Awaiting first login</span>
+                    <span className="text-xs text-amber-200">Awaiting first login</span>
                   )}
                 </div>
                 <form action={blockAction}>
                   <button
                     type="submit"
-                    className={`text-sm px-3 py-1.5 rounded-lg font-medium ${
+                    className={`rounded-[8px] px-3 py-1.5 text-sm font-medium transition ${
                       e.is_blocked
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                        : 'bg-red-100 text-red-700 hover:bg-red-200'
+                        ? 'bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/15'
+                        : 'bg-[#ff8ea8]/12 text-[#ff8ea8] hover:bg-[#ff8ea8]/18'
                     }`}
                   >
                     {e.is_blocked ? 'Unblock' : 'Block'}
@@ -57,10 +58,11 @@ export default async function SalesDashboard() {
             )
           })}
           {(!establishments || establishments.length === 0) && (
-            <p className="p-4 text-sm text-gray-500">Nenhum estabelecimento cadastrado ainda.</p>
+            <p className="p-4 text-sm text-white/55">Nenhum estabelecimento cadastrado ainda.</p>
           )}
         </div>
       </section>
+      </div>
     </main>
   )
 }

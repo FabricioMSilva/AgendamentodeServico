@@ -100,6 +100,8 @@ export interface Database {
           name: string
           address: string | null
           contact: string | null
+          phone: string | null
+          email: string | null
           zip_code: string | null
           street: string | null
           number: string | null
@@ -108,6 +110,13 @@ export interface Database {
           city: string | null
           state: string | null
           whatsapp_phone: string | null
+          instagram_url: string | null
+          facebook_url: string | null
+          youtube_url: string | null
+          tiktok_url: string | null
+          business_type: string
+          reminder_message: string | null
+          auto_cancel_hours_before: number
           logo_url: string | null
           business_hours: Json
           slots_per_schedule: number
@@ -123,6 +132,8 @@ export interface Database {
           name: string
           address?: string | null
           contact?: string | null
+          phone?: string | null
+          email?: string | null
           zip_code?: string | null
           street?: string | null
           number?: string | null
@@ -131,6 +142,13 @@ export interface Database {
           city?: string | null
           state?: string | null
           whatsapp_phone?: string | null
+          instagram_url?: string | null
+          facebook_url?: string | null
+          youtube_url?: string | null
+          tiktok_url?: string | null
+          business_type?: string
+          reminder_message?: string | null
+          auto_cancel_hours_before?: number
           logo_url?: string | null
           business_hours?: Json
           slots_per_schedule?: number
@@ -146,6 +164,8 @@ export interface Database {
           name?: string
           address?: string | null
           contact?: string | null
+          phone?: string | null
+          email?: string | null
           zip_code?: string | null
           street?: string | null
           number?: string | null
@@ -154,6 +174,13 @@ export interface Database {
           city?: string | null
           state?: string | null
           whatsapp_phone?: string | null
+          instagram_url?: string | null
+          facebook_url?: string | null
+          youtube_url?: string | null
+          tiktok_url?: string | null
+          business_type?: string
+          reminder_message?: string | null
+          auto_cancel_hours_before?: number
           logo_url?: string | null
           business_hours?: Json
           slots_per_schedule?: number
@@ -219,6 +246,440 @@ export interface Database {
           },
         ]
       }
+      establishment_media: {
+        Row: {
+          id: string
+          establishment_id: string
+          media_type: 'image' | 'video'
+          url: string
+          provider: 'upload' | 'youtube' | 'tiktok' | 'vimeo' | null
+          title: string | null
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          establishment_id: string
+          media_type: 'image' | 'video'
+          url: string
+          provider?: 'upload' | 'youtube' | 'tiktok' | 'vimeo' | null
+          title?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          establishment_id?: string
+          media_type?: 'image' | 'video'
+          url?: string
+          provider?: 'upload' | 'youtube' | 'tiktok' | 'vimeo' | null
+          title?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'establishment_media_establishment_id_fkey'
+            columns: ['establishment_id']
+            referencedRelation: 'establishments'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      service_catalog: {
+        Row: {
+          id: string
+          business_type: string
+          name: string
+          category: string
+          default_duration_minutes: number
+          default_price_type: PriceType
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          business_type: string
+          name: string
+          category?: string
+          default_duration_minutes?: number
+          default_price_type?: PriceType
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          business_type?: string
+          name?: string
+          category?: string
+          default_duration_minutes?: number
+          default_price_type?: PriceType
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      service_suggestions: {
+        Row: {
+          id: string
+          establishment_id: string
+          suggested_name: string
+          category: string
+          status: 'pending' | 'approved' | 'rejected'
+          admin_notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          establishment_id: string
+          suggested_name: string
+          category?: string
+          status?: 'pending' | 'approved' | 'rejected'
+          admin_notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          establishment_id?: string
+          suggested_name?: string
+          category?: string
+          status?: 'pending' | 'approved' | 'rejected'
+          admin_notes?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'service_suggestions_establishment_id_fkey'
+            columns: ['establishment_id']
+            referencedRelation: 'establishments'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      establishment_schedule_exceptions: {
+        Row: {
+          id: string
+          establishment_id: string
+          exception_date: string
+          is_open: boolean
+          open_time: string | null
+          close_time: string | null
+          reason: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          establishment_id: string
+          exception_date: string
+          is_open?: boolean
+          open_time?: string | null
+          close_time?: string | null
+          reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          establishment_id?: string
+          exception_date?: string
+          is_open?: boolean
+          open_time?: string | null
+          close_time?: string | null
+          reason?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'establishment_schedule_exceptions_establishment_id_fkey'
+            columns: ['establishment_id']
+            referencedRelation: 'establishments'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      staff_members: {
+        Row: {
+          id: string
+          establishment_id: string
+          profile_id: string | null
+          name: string
+          role: string | null
+          phone: string | null
+          email: string | null
+          is_active: boolean
+          business_hours: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          establishment_id: string
+          profile_id?: string | null
+          name: string
+          role?: string | null
+          phone?: string | null
+          email?: string | null
+          is_active?: boolean
+          business_hours?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          establishment_id?: string
+          profile_id?: string | null
+          name?: string
+          role?: string | null
+          phone?: string | null
+          email?: string | null
+          is_active?: boolean
+          business_hours?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'staff_members_establishment_id_fkey'
+            columns: ['establishment_id']
+            referencedRelation: 'establishments'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'staff_members_profile_id_fkey'
+            columns: ['profile_id']
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      staff_services: {
+        Row: {
+          staff_id: string
+          service_id: string
+          created_at: string
+        }
+        Insert: {
+          staff_id: string
+          service_id: string
+          created_at?: string
+        }
+        Update: {
+          staff_id?: string
+          service_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'staff_services_staff_id_fkey'
+            columns: ['staff_id']
+            referencedRelation: 'staff_members'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'staff_services_service_id_fkey'
+            columns: ['service_id']
+            referencedRelation: 'services'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          id: string
+          recipient_profile_id: string | null
+          establishment_id: string | null
+          appointment_id: string | null
+          channel: 'panel' | 'whatsapp' | 'email' | 'push'
+          title: string
+          body: string | null
+          status: 'unread' | 'read' | 'archived'
+          created_at: string
+          read_at: string | null
+        }
+        Insert: {
+          id?: string
+          recipient_profile_id?: string | null
+          establishment_id?: string | null
+          appointment_id?: string | null
+          channel?: 'panel' | 'whatsapp' | 'email' | 'push'
+          title: string
+          body?: string | null
+          status?: 'unread' | 'read' | 'archived'
+          created_at?: string
+          read_at?: string | null
+        }
+        Update: {
+          id?: string
+          recipient_profile_id?: string | null
+          establishment_id?: string | null
+          appointment_id?: string | null
+          channel?: 'panel' | 'whatsapp' | 'email' | 'push'
+          title?: string
+          body?: string | null
+          status?: 'unread' | 'read' | 'archived'
+          created_at?: string
+          read_at?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          id: string
+          establishment_id: string | null
+          appointment_id: string | null
+          recipient_phone: string
+          recipient_role: 'owner' | 'customer' | 'staff'
+          template_key: string
+          message_body: string
+          provider: string | null
+          provider_message_id: string | null
+          status: 'queued' | 'sent' | 'delivered' | 'failed' | 'cancelled'
+          error_message: string | null
+          scheduled_for: string | null
+          sent_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          establishment_id?: string | null
+          appointment_id?: string | null
+          recipient_phone: string
+          recipient_role: 'owner' | 'customer' | 'staff'
+          template_key: string
+          message_body: string
+          provider?: string | null
+          provider_message_id?: string | null
+          status?: 'queued' | 'sent' | 'delivered' | 'failed' | 'cancelled'
+          error_message?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          establishment_id?: string | null
+          appointment_id?: string | null
+          recipient_phone?: string
+          recipient_role?: 'owner' | 'customer' | 'staff'
+          template_key?: string
+          message_body?: string
+          provider?: string | null
+          provider_message_id?: string | null
+          status?: 'queued' | 'sent' | 'delivered' | 'failed' | 'cancelled'
+          error_message?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          id: string
+          establishment_id: string
+          appointment_id: string | null
+          customer_id: string | null
+          provider: string | null
+          method: 'pix' | 'card' | 'cash' | 'other' | null
+          amount: number
+          currency: string
+          status: 'pending' | 'authorized' | 'paid' | 'failed' | 'refunded' | 'cancelled'
+          provider_reference: string | null
+          paid_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          establishment_id: string
+          appointment_id?: string | null
+          customer_id?: string | null
+          provider?: string | null
+          method?: 'pix' | 'card' | 'cash' | 'other' | null
+          amount?: number
+          currency?: string
+          status?: 'pending' | 'authorized' | 'paid' | 'failed' | 'refunded' | 'cancelled'
+          provider_reference?: string | null
+          paid_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          establishment_id?: string
+          appointment_id?: string | null
+          customer_id?: string | null
+          provider?: string | null
+          method?: 'pix' | 'card' | 'cash' | 'other' | null
+          amount?: number
+          currency?: string
+          status?: 'pending' | 'authorized' | 'paid' | 'failed' | 'refunded' | 'cancelled'
+          provider_reference?: string | null
+          paid_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      appointment_events: {
+        Row: {
+          id: string
+          appointment_id: string
+          establishment_id: string
+          actor_profile_id: string | null
+          event_type:
+            | 'created'
+            | 'owner_confirmed'
+            | 'owner_rejected'
+            | 'customer_confirmed'
+            | 'customer_declined'
+            | 'completed'
+            | 'cancelled'
+            | 'no_show'
+            | 'reminder_sent'
+          status_from: string | null
+          status_to: string | null
+          amount: number | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          appointment_id: string
+          establishment_id: string
+          actor_profile_id?: string | null
+          event_type:
+            | 'created'
+            | 'owner_confirmed'
+            | 'owner_rejected'
+            | 'customer_confirmed'
+            | 'customer_declined'
+            | 'completed'
+            | 'cancelled'
+            | 'no_show'
+            | 'reminder_sent'
+          status_from?: string | null
+          status_to?: string | null
+          amount?: number | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          appointment_id?: string
+          establishment_id?: string
+          actor_profile_id?: string | null
+          event_type?:
+            | 'created'
+            | 'owner_confirmed'
+            | 'owner_rejected'
+            | 'customer_confirmed'
+            | 'customer_declined'
+            | 'completed'
+            | 'cancelled'
+            | 'no_show'
+            | 'reminder_sent'
+          status_from?: string | null
+          status_to?: string | null
+          amount?: number | null
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           id: string
@@ -232,7 +693,18 @@ export interface Database {
           notes: string | null
           total_price: number | null
           total_duration_minutes: number
+          staff_id: string | null
+          payment_id: string | null
+          cancelled_reason: string | null
+          owner_decision_at: string | null
+          owner_decision_by: string | null
           reminder_sent_at: string | null
+          owner_notified_at: string | null
+          customer_notified_at: string | null
+          customer_confirmation_status: string
+          customer_confirmed_at: string | null
+          customer_declined_at: string | null
+          reminder_due_at: string | null
           confirmed_by_customer_at: string | null
           created_at: string
         }
@@ -248,7 +720,18 @@ export interface Database {
           notes?: string | null
           total_price?: number | null
           total_duration_minutes?: number
+          staff_id?: string | null
+          payment_id?: string | null
+          cancelled_reason?: string | null
+          owner_decision_at?: string | null
+          owner_decision_by?: string | null
           reminder_sent_at?: string | null
+          owner_notified_at?: string | null
+          customer_notified_at?: string | null
+          customer_confirmation_status?: string
+          customer_confirmed_at?: string | null
+          customer_declined_at?: string | null
+          reminder_due_at?: string | null
           confirmed_by_customer_at?: string | null
           created_at?: string
         }
@@ -264,7 +747,18 @@ export interface Database {
           notes?: string | null
           total_price?: number | null
           total_duration_minutes?: number
+          staff_id?: string | null
+          payment_id?: string | null
+          cancelled_reason?: string | null
+          owner_decision_at?: string | null
+          owner_decision_by?: string | null
           reminder_sent_at?: string | null
+          owner_notified_at?: string | null
+          customer_notified_at?: string | null
+          customer_confirmation_status?: string
+          customer_confirmed_at?: string | null
+          customer_declined_at?: string | null
+          reminder_due_at?: string | null
           confirmed_by_customer_at?: string | null
           created_at?: string
         }
@@ -447,5 +941,15 @@ export type UpdateDTO<T extends keyof Database['public']['Tables']> =
 export type Profile = Tables<'profiles'>
 export type Establishment = Tables<'establishments'>
 export type Service = Tables<'services'>
+export type EstablishmentMedia = Tables<'establishment_media'>
+export type ServiceCatalogItem = Tables<'service_catalog'>
+export type ServiceSuggestion = Tables<'service_suggestions'>
+export type ScheduleException = Tables<'establishment_schedule_exceptions'>
+export type StaffMember = Tables<'staff_members'>
+export type StaffService = Tables<'staff_services'>
+export type Notification = Tables<'notifications'>
+export type WhatsappMessage = Tables<'whatsapp_messages'>
+export type Payment = Tables<'payments'>
+export type AppointmentEvent = Tables<'appointment_events'>
 export type Appointment = Tables<'appointments'>
 export type AppointmentItem = Tables<'appointment_items'>

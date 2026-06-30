@@ -170,10 +170,10 @@ export default function BookingForm({
       <section className="space-y-5">
         <div className="space-y-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#8b5f49]">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/55">
               Procedimentos
             </p>
-            <p className="mt-1 text-sm text-[#75685f]">
+            <p className="mt-1 text-sm text-white/64">
               Toque em um item para montar seu atendimento.
             </p>
           </div>
@@ -185,7 +185,7 @@ export default function BookingForm({
               className={`inline-flex min-h-10 shrink-0 items-center rounded-full px-4 text-sm font-medium transition ${
                 category === 'Todos'
                   ? 'bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white shadow-[0_12px_28px_rgba(106,0,255,0.16)]'
-                  : 'bg-white text-[#524a43] ring-1 ring-[#eadfd5] hover:bg-[#faf8ff]'
+                  : 'bg-white/8 text-white/78 ring-1 ring-white/10 hover:bg-white/12'
               }`}
             >
               Todos
@@ -198,7 +198,7 @@ export default function BookingForm({
                 className={`inline-flex min-h-10 shrink-0 items-center rounded-full px-4 text-sm font-medium transition ${
                   category === item
                     ? 'bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white shadow-[0_12px_28px_rgba(106,0,255,0.16)]'
-                    : 'bg-white text-[#524a43] ring-1 ring-[#eadfd5] hover:bg-[#faf8ff]'
+                    : 'bg-white/8 text-white/78 ring-1 ring-white/10 hover:bg-white/12'
                 }`}
               >
                 {item}
@@ -217,11 +217,11 @@ export default function BookingForm({
                 onClick={() => toggleService(service.id)}
                 className={`grid gap-4 rounded-[8px] border p-4 text-left transition sm:grid-cols-[96px_1fr_auto] ${
                   selected
-                    ? 'border-[#22201d] bg-[#fffaf5] shadow-[0_10px_30px_rgba(34,32,29,0.08)]'
-                    : 'border-[#eadfd5] bg-white hover:border-[#cbb7a7] hover:shadow-[0_10px_24px_rgba(34,32,29,0.05)]'
+                    ? 'border-[#FF66B2]/55 bg-white/10 shadow-[0_14px_34px_rgba(255,0,127,0.14)]'
+                    : 'border-white/10 bg-[#11172B] hover:border-white/20 hover:bg-white/8'
                 }`}
               >
-                <div className="h-24 overflow-hidden rounded-[6px] bg-[#f3e7dd]">
+                <div className="h-24 overflow-hidden rounded-[6px] bg-white/8">
                   {service.image_url ? (
                     <img
                       src={service.image_url}
@@ -229,29 +229,29 @@ export default function BookingForm({
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-xs font-semibold uppercase tracking-[0.16em] text-[#9a7d6b]">
+                    <div className="flex h-full items-center justify-center text-xs font-semibold uppercase tracking-[0.16em] text-white/48">
                       {service.category}
                     </div>
                   )}
                 </div>
                 <div>
-                  <p className="text-base font-semibold text-[#22201d]">{service.name}</p>
-                  <p className="mt-1 text-sm leading-6 text-[#75685f]">
+                  <p className="text-base font-semibold text-white">{service.name}</p>
+                  <p className="mt-1 text-sm leading-6 text-white/64">
                     {service.description || 'Serviço profissional com horário reservado.'}
                   </p>
-                  <p className="mt-2 text-xs font-medium text-[#8b5f49]">
+                  <p className="mt-2 text-xs font-medium text-white/55">
                     {service.duration_minutes} min
                   </p>
                 </div>
                 <div className="flex items-center justify-between gap-3 sm:block sm:text-right">
-                  <p className="text-sm font-semibold text-[#22201d]">
+                  <p className="text-sm font-semibold text-white">
                     {money(service.price)}
                   </p>
                   <span
                     className={`mt-2 inline-flex h-7 items-center rounded-full px-3 text-xs font-semibold ${
                       selected
-                        ? 'bg-[#22201d] text-white'
-                        : 'bg-[#f4eee8] text-[#8b5f49]'
+                        ? 'bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white'
+                        : 'bg-white/8 text-white/72 ring-1 ring-white/10'
                     }`}
                   >
                     {selected ? 'No carrinho' : 'Adicionar'}
@@ -263,47 +263,47 @@ export default function BookingForm({
         </div>
       </section>
 
-      <aside className="h-fit rounded-[8px] border border-[#eadfd5] bg-white p-5 shadow-sm lg:sticky lg:top-6">
-        <h2 className="text-lg font-semibold text-[#22201d]">Seu horário</h2>
+      <aside className="h-fit rounded-[8px] border border-white/10 bg-[#11172B] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] lg:sticky lg:top-6">
+        <h2 className="text-lg font-semibold text-white">Seu horário</h2>
 
         {success && (
-          <div className="mt-4 rounded-[8px] border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+          <div className="mt-4 rounded-[8px] border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
             Agendamento enviado. O estabelecimento vai confirmar seu horário.
           </div>
         )}
 
         {errors._form && (
-          <div className="mt-4 rounded-[8px] border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-4 rounded-[8px] border border-[#ff8ea8]/20 bg-[#ff8ea8]/12 p-3 text-sm text-[#ff8ea8]">
             {errors._form.join(', ')}
           </div>
         )}
 
         <div className="mt-4 space-y-3">
           {selectedServices.length === 0 ? (
-            <p className="text-sm text-[#75685f]">Escolha um ou mais procedimentos.</p>
+            <p className="text-sm text-white/60">Escolha um ou mais procedimentos.</p>
           ) : (
             selectedServices.map((service) => (
               <div key={service.id} className="flex justify-between gap-3 text-sm">
-                <span className="text-[#524a43]">{service.name}</span>
-                <span className="font-medium text-[#22201d]">{money(service.price)}</span>
+                <span className="text-white/68">{service.name}</span>
+                <span className="font-medium text-white">{money(service.price)}</span>
               </div>
             ))
           )}
         </div>
 
-        <div className="mt-4 rounded-[8px] bg-[#fff7ef] p-3 text-sm text-[#524a43]">
+        <div className="mt-4 rounded-[8px] bg-white/7 p-3 text-sm text-white/70 ring-1 ring-white/10">
           <div className="flex justify-between">
             <span>Duração</span>
-            <strong>{totalDuration || 0} min</strong>
+            <strong className="text-white">{totalDuration || 0} min</strong>
           </div>
           <div className="mt-1 flex justify-between">
             <span>Total</span>
-            <strong>{fixedTotal == null ? 'Sob consulta' : money(fixedTotal)}</strong>
+            <strong className="text-white">{fixedTotal == null ? 'Sob consulta' : money(fixedTotal)}</strong>
           </div>
         </div>
 
         <div className="mt-5">
-          <label className="text-sm font-semibold text-[#22201d]">Data</label>
+          <label className="text-sm font-semibold text-white/80">Data</label>
           <DayPicker
             mode="single"
             selected={selectedDay}
@@ -313,13 +313,13 @@ export default function BookingForm({
             }}
             disabled={isDayDisabled}
             fromDate={dayjs().toDate()}
-            classNames={{ root: 'mt-2 rounded-[8px] border border-[#eadfd5] bg-[#fffcfa] p-3 text-sm' }}
+            classNames={{ root: 'mt-2 rounded-[8px] border border-white/10 bg-white/5 p-3 text-sm text-white' }}
           />
         </div>
 
         {selectedDay && (
           <div className="mt-5">
-            <label className="text-sm font-semibold text-[#22201d]">Horário</label>
+            <label className="text-sm font-semibold text-white/80">Horário</label>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {timeSlots.map((time) => (
                 <button
@@ -329,7 +329,7 @@ export default function BookingForm({
                   className={`rounded-full border py-2 text-sm font-medium transition ${
                     selectedTime === time
                       ? 'border-[#6A00FF] bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white shadow-[0_12px_24px_rgba(106,0,255,0.18)]'
-                      : 'border-[#eadfd5] bg-white text-[#524a43] hover:bg-[#faf8ff]'
+                      : 'border-white/10 bg-white/8 text-white/78 hover:bg-white/12'
                   }`}
                 >
                   {time}
@@ -337,7 +337,7 @@ export default function BookingForm({
               ))}
             </div>
             {timeSlots.length === 0 && (
-              <p className="mt-2 text-sm text-[#75685f]">
+              <p className="mt-2 text-sm text-white/60">
                 Nenhum horário livre para a duração escolhida.
               </p>
             )}
@@ -349,19 +349,19 @@ export default function BookingForm({
             name="customer_name"
             placeholder="Seu nome"
             required
-            className="rounded-[8px] border border-[#eadfd5] px-3 py-2 text-sm outline-none focus:border-[#22201d]"
+            className="rounded-[8px] border border-white/10 bg-[#0f1527] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
           />
           <input
             name="customer_phone"
             placeholder="WhatsApp"
             required
-            className="rounded-[8px] border border-[#eadfd5] px-3 py-2 text-sm outline-none focus:border-[#22201d]"
+            className="rounded-[8px] border border-white/10 bg-[#0f1527] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
           />
           <textarea
             name="notes"
             placeholder="Observação para o estabelecimento"
             rows={3}
-            className="rounded-[8px] border border-[#eadfd5] px-3 py-2 text-sm outline-none focus:border-[#22201d]"
+            className="rounded-[8px] border border-white/10 bg-[#0f1527] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
           />
         </div>
 
@@ -370,7 +370,7 @@ export default function BookingForm({
           variant="primary"
           disabled={pending || !selectedDay || !selectedTime || cart.length === 0}
           loading={pending}
-          className="mt-5 w-full rounded-[8px] bg-[#22201d] py-3 hover:bg-[#3a332e]"
+          className="mt-5 w-full rounded-[8px] py-3"
         >
           Solicitar agendamento
         </Button>

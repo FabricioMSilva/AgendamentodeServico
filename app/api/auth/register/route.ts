@@ -10,6 +10,18 @@ function toAuthEmail(phoneDigits: string) {
   return `phone-${phoneDigits}@ibeleza.local`
 }
 
+function hasSupabaseConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  return Boolean(
+    url &&
+      serviceRoleKey &&
+      !url.includes('your-project.supabase.co') &&
+      serviceRoleKey !== 'your-service-role-key',
+  )
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
@@ -46,6 +58,13 @@ export async function POST(request: Request) {
 
     if (password.length < 6) {
       return NextResponse.json({ error: 'A senha precisa ter pelo menos 6 caracteres.' }, { status: 400 })
+    }
+
+    if (!hasSupabaseConfig()) {
+      return NextResponse.json(
+        { error: 'Configure as chaves reais do Supabase antes de criar contas.' },
+        { status: 400 },
+      )
     }
 
     const supabase = createAdminClient()

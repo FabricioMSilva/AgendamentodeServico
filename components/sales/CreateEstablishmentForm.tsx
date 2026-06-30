@@ -8,6 +8,8 @@ export default function CreateEstablishmentForm() {
   const [errors, setErrors] = useState<Record<string, string[]>>({})
   const [success, setSuccess] = useState(false)
   const [pending, setPending] = useState(false)
+  const inputClass =
+    'w-full rounded-[8px] border border-white/10 bg-[#11172B] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25'
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -28,14 +30,14 @@ export default function CreateEstablishmentForm() {
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+    <form ref={formRef} onSubmit={handleSubmit} className="grid max-w-2xl grid-cols-1 gap-4 rounded-[8px] border border-white/10 bg-white/6 p-5 sm:grid-cols-2">
       {errors._form && (
-        <p className="col-span-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+        <p className="col-span-2 rounded-[8px] bg-[#ff8ea8]/12 p-3 text-sm text-[#ff8ea8] ring-1 ring-[#ff8ea8]/20">
           {errors._form.join(', ')}
         </p>
       )}
       {success && (
-        <p className="col-span-2 text-sm text-green-700 bg-green-50 p-3 rounded-lg">
+        <p className="col-span-2 rounded-[8px] bg-emerald-400/10 p-3 text-sm text-emerald-100 ring-1 ring-emerald-300/20">
           Estabelecimento criado com sucesso.
         </p>
       )}
@@ -46,14 +48,14 @@ export default function CreateEstablishmentForm() {
       <Field label="Contato" name="contact" errors={errors.contact} />
       <Field label="Endereço" name="address" className="col-span-2" errors={errors.address} />
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Vagas por grade</label>
+        <label className="mb-1 block text-sm font-medium text-white/80">Vagas por grade</label>
         <input
           name="slots_per_schedule"
           type="number"
           defaultValue={10}
           min={1}
           max={200}
-          className="w-full border rounded-lg px-3 py-2 text-sm"
+          className={inputClass}
         />
       </div>
 
@@ -61,7 +63,7 @@ export default function CreateEstablishmentForm() {
         <button
           type="submit"
           disabled={pending}
-          className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+          className="rounded-full bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
         >
           {pending ? 'Criando…' : 'Criar estabelecimento'}
         </button>
@@ -81,19 +83,22 @@ function Field({
   className?: string
   errors?: string[]
 }) {
+  const inputClass =
+    'w-full rounded-[8px] border border-white/10 bg-[#11172B] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25'
+
   return (
     <div className={className}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+      <label className="mb-1 block text-sm font-medium text-white/80">
+        {label}{required && <span className="ml-0.5 text-[#FF66B2]">*</span>}
       </label>
       <input
         name={name}
         type={type}
         required={required}
         placeholder={placeholder}
-        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+        className={inputClass}
       />
-      {errors && <p className="text-xs text-red-600 mt-1">{errors.join(', ')}</p>}
+      {errors && <p className="mt-1 text-xs text-[#ff8ea8]">{errors.join(', ')}</p>}
     </div>
   )
 }

@@ -147,6 +147,16 @@ export async function bookAppointment(formData: FormData): Promise<BookResult> {
 
   if (itemError) return { error: { _form: [itemError.message] } }
 
+  await supabase.from('appointment_events').insert({
+    appointment_id: appointment.id,
+    establishment_id: parsed.data.establishment_id,
+    actor_profile_id: user.id,
+    event_type: 'created',
+    status_to: 'pending',
+    amount: totalPrice,
+    notes: parsed.data.notes ?? null,
+  })
+
   revalidatePath('/')
   return { success: true }
 }

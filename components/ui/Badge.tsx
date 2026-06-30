@@ -6,27 +6,27 @@ const statusConfig: Record<
 > = {
   pending: {
     label: 'Aguardando',
-    className: 'bg-amber-100 text-amber-800',
+    className: 'bg-white/8 text-white/68 ring-1 ring-white/10',
   },
   confirmed: {
-    label: 'Confirmado',
-    className: 'bg-blue-100 text-blue-800',
+    label: 'Aceito',
+    className: 'bg-emerald-300/12 text-emerald-100 ring-1 ring-emerald-200/20',
   },
   checked_in: {
-    label: 'Presente',
-    className: 'bg-purple-100 text-purple-800',
+    label: 'Aguardando confirmação',
+    className: 'bg-amber-300/12 text-amber-100 ring-1 ring-amber-200/20',
   },
   completed: {
     label: 'Concluído',
-    className: 'bg-green-100 text-green-800',
+    className: 'bg-emerald-300/12 text-emerald-100 ring-1 ring-emerald-200/20',
   },
   cancelled: {
-    label: 'Cancelado',
-    className: 'bg-red-100 text-red-800',
+    label: 'Recusado',
+    className: 'bg-[#ff8ea8]/12 text-[#ff8ea8] ring-1 ring-[#ff8ea8]/20',
   },
   no_show: {
     label: 'Não Compareceu',
-    className: 'bg-gray-100 text-gray-700',
+    className: 'bg-white/8 text-white/68 ring-1 ring-white/10',
   },
 }
 

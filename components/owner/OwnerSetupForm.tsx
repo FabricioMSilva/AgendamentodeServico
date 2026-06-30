@@ -43,22 +43,22 @@ export default function OwnerSetupForm() {
     <form
       ref={formRef}
       onSubmit={handleSubmit}
-      className="grid gap-4 rounded-[8px] bg-white p-5 text-[#22201d] shadow-[0_18px_45px_rgba(0,0,0,0.12)] sm:grid-cols-2"
+      className="grid gap-4 rounded-[8px] bg-white/6 p-5 text-white shadow-[0_18px_50px_rgba(0,0,0,0.18)] ring-1 ring-white/10 sm:grid-cols-2"
     >
       <div className="sm:col-span-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8b5f49]">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">
           Novo estabelecimento
         </p>
         <h2 className="mt-2 text-2xl font-semibold">
           Vamos abrir o seu painel do dono
         </h2>
-        <p className="mt-2 text-sm leading-6 text-[#6d625b]">
+        <p className="mt-2 text-sm leading-6 text-white/68">
           O cadastro já cria seu vínculo com o painel de gestão. Depois você ajusta agenda, serviços e horários.
         </p>
       </div>
 
       {errors._form && (
-        <p className="sm:col-span-2 rounded-[8px] bg-red-50 p-3 text-sm text-red-700">
+        <p className="sm:col-span-2 rounded-[8px] bg-[#ff8ea8]/12 p-3 text-sm text-[#ff8ea8] ring-1 ring-[#ff8ea8]/20">
           {errors._form.join(', ')}
         </p>
       )}
@@ -79,6 +79,7 @@ export default function OwnerSetupForm() {
           title="Endereço do negócio"
           description="CEP para preencher rua, bairro, cidade e estado automaticamente."
           required
+          tone="dark"
         />
       </div>
 
@@ -110,9 +111,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-[#4a433d]">
+      <label className="mb-1 block text-sm font-medium text-white/80">
         {label}
-        {required ? <span className="ml-0.5 text-red-500">*</span> : null}
+        {required ? <span className="ml-0.5 text-[#FF66B2]">*</span> : null}
       </label>
       <input
         name={name}
@@ -128,10 +129,10 @@ function Field({
             onValueChange?.(value)
           }
         }}
-        className="w-full rounded-[8px] border border-[#eadfd5] px-3 py-2 text-sm outline-none focus:border-[#22201d]"
+        className="w-full rounded-[8px] border border-white/10 bg-[#11172B] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
       />
-      {helper ? <p className="mt-1 text-xs text-[#8b5f49]">{helper}</p> : null}
-      {errors ? <p className="mt-1 text-xs text-red-600">{errors.join(', ')}</p> : null}
+      {helper ? <p className="mt-1 text-xs text-white/55">{helper}</p> : null}
+      {errors ? <p className="mt-1 text-xs text-[#ff8ea8]">{errors.join(', ')}</p> : null}
     </div>
   )
 }

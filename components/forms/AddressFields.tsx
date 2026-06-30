@@ -14,6 +14,7 @@ type Props = {
   title?: string
   description?: string
   required?: boolean
+  tone?: 'light' | 'dark'
   initialValues?: {
     zip_code?: string | null
     street?: string | null
@@ -29,6 +30,7 @@ export default function AddressFields({
   title = 'Endereço',
   description = 'CEP para preencher automaticamente rua, bairro, cidade e estado.',
   required = false,
+  tone = 'light',
   initialValues,
 }: Props) {
   const [zipCode, setZipCode] = useState(initialValues?.zip_code ?? '')
@@ -75,19 +77,35 @@ export default function AddressFields({
     }
   }
 
-  const inputClass =
-    'w-full rounded-[8px] border border-[#eadfd5] px-3 py-2 text-sm outline-none transition focus:border-[#22201d]'
+  const isDark = tone === 'dark'
+  const inputClass = isDark
+    ? 'w-full rounded-[8px] border border-white/10 bg-[#11172B] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25'
+    : 'w-full rounded-[8px] border border-[#eadfd5] px-3 py-2 text-sm outline-none transition focus:border-[#22201d]'
+  const fieldsetClass = isDark
+    ? 'space-y-4 rounded-[8px] border border-white/10 bg-white/5 p-4'
+    : 'space-y-4 rounded-[8px] border border-[#eadfd5] bg-white p-4'
+  const titleClass = isDark
+    ? 'text-sm font-semibold text-white'
+    : 'text-sm font-semibold text-[#22201d]'
+  const descriptionClass = isDark
+    ? 'mt-1 text-xs leading-5 text-white/60'
+    : 'mt-1 text-xs leading-5 text-[#75685f]'
+  const labelClass = isDark
+    ? 'mb-1 block text-xs font-medium text-white/72'
+    : 'mb-1 block text-xs font-medium text-[#4a433d]'
+  const helperClass = isDark ? 'text-xs text-white/55' : 'text-xs text-[#75685f]'
+  const messageClass = isDark ? 'text-xs text-[#FF66B2]' : 'text-xs text-[#8b5f49]'
 
   return (
-    <fieldset className="space-y-4 rounded-[8px] border border-[#eadfd5] bg-white p-4">
+    <fieldset className={fieldsetClass}>
       <div>
-        <p className="text-sm font-semibold text-[#22201d]">{title}</p>
-        <p className="mt-1 text-xs leading-5 text-[#75685f]">{description}</p>
+        <p className={titleClass}>{title}</p>
+        <p className={descriptionClass}>{description}</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-[#4a433d]">
+          <span className={labelClass}>
             CEP{required ? <span className="ml-0.5 text-red-500">*</span> : null}
           </span>
           <input
@@ -104,7 +122,7 @@ export default function AddressFields({
         <div className="flex items-end">
           <Button
             type="button"
-            variant="secondary"
+            variant={isDark ? 'ghost' : 'secondary'}
             loading={loading}
             onClick={handleLookup}
             className="w-full rounded-[8px]"
@@ -116,7 +134,7 @@ export default function AddressFields({
 
       <div className="grid gap-3 md:grid-cols-2">
         <label className="block md:col-span-2">
-          <span className="mb-1 block text-xs font-medium text-[#4a433d]">
+          <span className={labelClass}>
             Rua{required ? <span className="ml-0.5 text-red-500">*</span> : null}
           </span>
           <input
@@ -130,7 +148,7 @@ export default function AddressFields({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-[#4a433d]">Número</span>
+          <span className={labelClass}>Número</span>
           <input
             name="number"
             value={number}
@@ -141,7 +159,7 @@ export default function AddressFields({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-[#4a433d]">Complemento</span>
+          <span className={labelClass}>Complemento</span>
           <input
             name="complement"
             value={complement}
@@ -152,7 +170,7 @@ export default function AddressFields({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-[#4a433d]">
+          <span className={labelClass}>
             Bairro{required ? <span className="ml-0.5 text-red-500">*</span> : null}
           </span>
           <input
@@ -166,7 +184,7 @@ export default function AddressFields({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-[#4a433d]">
+          <span className={labelClass}>
             Cidade{required ? <span className="ml-0.5 text-red-500">*</span> : null}
           </span>
           <input
@@ -180,7 +198,7 @@ export default function AddressFields({
         </label>
 
         <label className="block md:col-span-2">
-          <span className="mb-1 block text-xs font-medium text-[#4a433d]">
+          <span className={labelClass}>
             Estado{required ? <span className="ml-0.5 text-red-500">*</span> : null}
           </span>
           <select
@@ -201,10 +219,10 @@ export default function AddressFields({
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-[#75685f]">
+        <p className={helperClass}>
           {filled ? 'Dá para ajustar qualquer campo antes de salvar.' : 'Digite o CEP para começar.'}
         </p>
-        {message ? <p className="text-xs text-[#8b5f49]">{message}</p> : null}
+        {message ? <p className={messageClass}>{message}</p> : null}
       </div>
     </fieldset>
   )

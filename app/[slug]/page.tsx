@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import BlockedScreen from '@/components/customer/BlockedScreen'
 import BookingForm from '@/components/customer/BookingForm'
-import type { Service } from '@/database.types'
+import type { EstablishmentMedia, Service } from '@/database.types'
 
 type BusinessHours = Record<string, { open: string; close: string } | null>
 type ReservedSlot = { scheduled_at: string; total_duration_minutes: number }
@@ -68,13 +68,25 @@ export default async function SlugPage({ params }: Props) {
 
   const est = establishment as EstablishmentWithServices
   const db = createAdminClient()
-  const { data: reservedSlots } = await db
-    .from('appointments')
-    .select('scheduled_at, total_duration_minutes')
-    .eq('establishment_id', est.id)
-    .in('status', ['pending', 'confirmed', 'checked_in'])
-    .gte('scheduled_at', new Date().toISOString())
-    .order('scheduled_at', { ascending: true })
+  const availabilityEnd = new Date()
+  availabilityEnd.setDate(availabilityEnd.getDate() + 180)
+  const [{ data: reservedSlots }, { data: mediaRaw }] = await Promise.all([
+    db
+      .from('appointments')
+      .select('scheduled_at, total_duration_minutes')
+      .eq('establishment_id', est.id)
+      .in('status', ['pending', 'confirmed', 'checked_in'])
+      .gte('scheduled_at', new Date().toISOString())
+      .lt('scheduled_at', availabilityEnd.toISOString())
+      .order('scheduled_at', { ascending: true })
+      .limit(1000),
+    db
+      .from('establishment_media')
+      .select('*')
+      .eq('establishment_id', est.id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true }),
+  ])
 
   const services = (est.services ?? [])
     .filter((service) => service.is_active)
@@ -90,6 +102,7 @@ export default async function SlugPage({ params }: Props) {
   const hours = (est.business_hours as BusinessHours) ?? {}
   const openDays = Object.values(hours).filter(Boolean).length
   const initials = getInitials(est.name)
+  const gallery = ((mediaRaw ?? []) as EstablishmentMedia[]).filter((item) => item.media_type === 'image')
 
   return (
     <main className="min-h-screen bg-[#1A2033] text-white">
@@ -234,6 +247,24 @@ export default async function SlugPage({ params }: Props) {
                   </p>
                 </div>
               </div>
+
+              {gallery.length > 0 ? (
+                <div className="mt-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/48">
+                    Fotos
+                  </p>
+                  <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-2">
+                    {gallery.map((item) => (
+                      <img
+                        key={item.id}
+                        src={item.url}
+                        alt={item.title ?? ''}
+                        className="aspect-[4/3] w-64 shrink-0 snap-start rounded-[8px] object-cover ring-1 ring-white/10"
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -254,7 +285,7 @@ export default async function SlugPage({ params }: Props) {
           </p>
         </div>
 
-        <div className="rounded-[8px] bg-white p-4 shadow-[0_28px_60px_rgba(0,0,0,0.16)] sm:p-5">
+        <div className="rounded-[8px] bg-white/6 p-4 shadow-[0_28px_60px_rgba(0,0,0,0.16)] ring-1 ring-white/10 sm:p-5">
         <BookingForm
           establishmentId={est.id}
           services={services}

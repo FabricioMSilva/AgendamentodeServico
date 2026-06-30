@@ -31,6 +31,20 @@ function slugify(value: string) {
     .slice(0, 50)
 }
 
+function friendlyEstablishmentError(message: string) {
+  if (
+    message.includes("'city' column") ||
+    message.includes("'zip_code' column") ||
+    message.includes("'street' column") ||
+    message.includes("'neighborhood' column") ||
+    message.includes("schema cache")
+  ) {
+    return 'Seu banco ainda não tem os campos de endereço. Rode a migration supabase/migrations/20240101000004_address_fields.sql no Supabase.'
+  }
+
+  return message
+}
+
 export async function createOwnerEstablishment(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -125,7 +139,7 @@ export async function createOwnerEstablishment(formData: FormData) {
       return { error: { _form: ['Já existe um cadastro com esses dados.'] } }
     }
 
-    return { error: { _form: [error.message] } }
+    return { error: { _form: [friendlyEstablishmentError(error.message)] } }
   }
 
   const { error: profileError } = await db
