@@ -131,9 +131,17 @@ export default async function SlugPage({ params }: Props) {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-[8px] bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-xl font-semibold text-white shadow-[0_16px_30px_rgba(106,0,255,0.28)] sm:h-20 sm:w-20 sm:text-2xl">
-                    {initials}
-                  </div>
+                  {est.logo_url ? (
+                    <img
+                      src={est.logo_url}
+                      alt={`Logo de ${est.name}`}
+                      className="h-16 w-16 rounded-[8px] object-cover shadow-[0_16px_30px_rgba(106,0,255,0.28)] ring-1 ring-white/15 sm:h-20 sm:w-20"
+                    />
+                  ) : (
+                    <div className="flex h-16 w-16 items-center justify-center rounded-[8px] bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-xl font-semibold text-white shadow-[0_16px_30px_rgba(106,0,255,0.28)] sm:h-20 sm:w-20 sm:text-2xl">
+                      {initials}
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <h1 className="font-brand text-4xl leading-[0.92] text-white sm:text-5xl">
                       {est.name}
