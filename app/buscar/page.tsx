@@ -23,6 +23,36 @@ type EstablishmentWithServices = Database['public']['Tables']['establishments'][
   services: Service[]
 }
 
+type UserLocation = Pick<
+  Database['public']['Tables']['profiles']['Row'],
+  'zip_code' | 'neighborhood' | 'city' | 'state' | 'latitude' | 'longitude'
+>
+
+type LocationFields = {
+  zip_code: string | null
+  neighborhood: string | null
+  city: string | null
+  state: string | null
+  latitude: number | null
+  longitude: number | null
+}
+
+type NextSlots = {
+  label: string
+  slots: string[]
+  rankMinutes: number
+} | null
+
+type RankedEstablishment = EstablishmentWithServices & {
+  distanceKm: number | null
+  distanceLabel: string | null
+  exactServiceRank: number
+  cheapestPrice: number | null
+  duration: number
+  slotStep: number
+  nextSlots: NextSlots
+}
+
 const categoryLabels: Record<string, string> = {
   'Cortar cabelo': 'corte',
   'Fazer unha': 'unhas',
@@ -34,6 +64,106 @@ const categoryLabels: Record<string, string> = {
 
 function money(value: number | null) {
   return value == null ? 'Sob consulta' : `R$ ${Number(value).toFixed(2)}`
+}
+
+function normalizeText(value: string | null | undefined) {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+}
+
+function normalizeZip(value: string | null | undefined) {
+  return (value ?? '').replace(/\D/g, '')
+}
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180
+}
+
+function getCoordinateDistanceKm(origin: LocationFields | null, target: LocationFields) {
+  if (
+    origin?.latitude == null ||
+    origin.longitude == null ||
+    target.latitude == null ||
+    target.longitude == null
+  ) {
+    return null
+  }
+
+  const earthRadiusKm = 6371
+  const dLat = toRadians(target.latitude - origin.latitude)
+  const dLon = toRadians(target.longitude - origin.longitude)
+  const lat1 = toRadians(origin.latitude)
+  const lat2 = toRadians(target.latitude)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function getAddressDistanceRank(origin: LocationFields | null, target: LocationFields) {
+  if (!origin) return null
+
+  const originZip = normalizeZip(origin.zip_code)
+  const targetZip = normalizeZip(target.zip_code)
+  const sameState = normalizeText(origin.state) && normalizeText(origin.state) === normalizeText(target.state)
+  const sameCity = sameState && normalizeText(origin.city) === normalizeText(target.city)
+  const sameNeighborhood =
+    sameCity && normalizeText(origin.neighborhood) === normalizeText(target.neighborhood)
+
+  if (originZip && targetZip && originZip === targetZip) return 0.2
+  if (originZip && targetZip && originZip.slice(0, 5) === targetZip.slice(0, 5)) return 1.5
+  if (sameNeighborhood) return 3
+  if (sameCity) return 12
+  if (sameState) return 80
+
+  return null
+}
+
+function getDistanceKm(origin: LocationFields | null, target: LocationFields) {
+  return getCoordinateDistanceKm(origin, target) ?? getAddressDistanceRank(origin, target)
+}
+
+function formatDistance(distanceKm: number | null) {
+  if (distanceKm == null) return null
+  if (distanceKm < 1) return 'menos de 1 km'
+  if (distanceKm < 10) return `${distanceKm.toFixed(1)} km`
+  return `${Math.round(distanceKm)} km`
+}
+
+function getDistanceBucket(distanceKm: number | null) {
+  if (distanceKm == null) return Number.POSITIVE_INFINITY
+  if (distanceKm <= 3) return 0
+  if (distanceKm <= 8) return 1
+  if (distanceKm <= 15) return 2
+  if (distanceKm <= 30) return 3
+  if (distanceKm <= 80) return 4
+  return 5
+}
+
+function getExactServiceRank(services: Service[], terms: string[]) {
+  if (terms.length === 0) return 9
+
+  const normalizedTerms = terms.map(normalizeText).filter(Boolean)
+  let bestRank = 9
+
+  for (const service of services) {
+    const name = normalizeText(service.name)
+    const category = normalizeText(service.category)
+    const description = normalizeText(service.description)
+
+    for (const term of normalizedTerms) {
+      if (name === term) bestRank = Math.min(bestRank, 0)
+      else if (name.includes(term)) bestRank = Math.min(bestRank, 1)
+      else if (category.includes(term)) bestRank = Math.min(bestRank, 2)
+      else if (description.includes(term)) bestRank = Math.min(bestRank, 3)
+    }
+  }
+
+  return bestRank
 }
 
 function parseBusinessHours(value: unknown): BusinessHours {
@@ -94,6 +224,7 @@ function getNextSlots(
       return {
         label: offset === 0 ? 'Hoje' : dayjs(date).format('ddd, DD/MM'),
         slots: daySlots.slice(0, 3),
+        rankMinutes: offset * 24 * 60 + Number(daySlots[0].slice(0, 2)) * 60 + Number(daySlots[0].slice(3, 5)),
       }
     }
   }
@@ -125,12 +256,25 @@ export default async function SearchPage({
   const terms = getNeedTerms(params?.need)
 
   const supabase = await createClient()
-  const { data: establishmentsRaw } = await supabase
-    .from('establishments')
-    .select('id, slug, name, address, contact, whatsapp_phone, logo_url, business_hours, slots_per_schedule, services(id, name, price, price_type, duration_minutes, category, description, image_url, is_active)')
-    .eq('is_blocked', false)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const [establishmentsResult, profileResult] = await Promise.all([
+    supabase
+      .from('establishments')
+      .select('id, slug, name, address, contact, whatsapp_phone, logo_url, business_hours, slots_per_schedule, zip_code, neighborhood, city, state, latitude, longitude, services(id, name, price, price_type, duration_minutes, category, description, image_url, is_active)')
+      .eq('is_blocked', false),
+    user
+      ? supabase
+          .from('profiles')
+          .select('zip_code, neighborhood, city, state, latitude, longitude')
+          .eq('id', user.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ])
 
-  const establishments = (establishmentsRaw ?? []) as EstablishmentWithServices[]
+  const establishments = (establishmentsResult.data ?? []) as EstablishmentWithServices[]
+  const userLocation = (profileResult.data ?? null) as UserLocation | null
   const matched = establishments
     .map((establishment) => {
       const services = (establishment.services ?? []).filter((service) => {
@@ -152,12 +296,10 @@ export default async function SearchPage({
     })
     .filter((establishment) => establishment.services.length > 0)
 
-  const sorted = (matched.length > 0 ? matched : establishments)
-    .slice()
-    .sort((a, b) => b.services.length - a.services.length || a.name.localeCompare(b.name))
+  const candidates = matched.length > 0 ? matched : establishments
 
   const reservedSlots: ReservedSlot[] = []
-  if (sorted.length > 0) {
+  if (candidates.length > 0) {
     const db = createAdminClient()
     const availabilityEnd = new Date()
     availabilityEnd.setDate(availabilityEnd.getDate() + 180)
@@ -166,7 +308,7 @@ export default async function SearchPage({
       .select('establishment_id, scheduled_at, total_duration_minutes')
       .in(
         'establishment_id',
-        sorted.map((item) => item.id),
+        candidates.map((item) => item.id),
       )
       .in('status', ['pending', 'confirmed', 'checked_in'])
       .gte('scheduled_at', new Date().toISOString())
@@ -176,6 +318,52 @@ export default async function SearchPage({
 
     reservedSlots.push(...((reservedRaw ?? []) as ReservedSlot[]))
   }
+
+  const sorted: RankedEstablishment[] = candidates
+    .map((establishment) => {
+      const services = establishment.services
+      const prices = services
+        .map((service) => service.price)
+        .filter((price): price is number => price != null)
+      const cheapestPrice = prices.sort((a, b) => a - b)[0] ?? null
+      const duration = Math.min(...services.map((service) => service.duration_minutes))
+      const slotStep = Math.max(15, Math.round(480 / Math.max(establishment.slots_per_schedule, 1)))
+      const hours = parseBusinessHours(establishment.business_hours)
+      const nextSlots = getNextSlots(
+        hours,
+        reservedSlots.filter((slot) => slot.establishment_id === establishment.id),
+        Number.isFinite(duration) ? duration : 30,
+        slotStep,
+      )
+      const distanceKm = getDistanceKm(userLocation, establishment)
+
+      return {
+        ...establishment,
+        distanceKm,
+        distanceLabel: formatDistance(distanceKm),
+        exactServiceRank: getExactServiceRank(services, terms),
+        cheapestPrice,
+        duration: Number.isFinite(duration) ? duration : 30,
+        slotStep,
+        nextSlots,
+      }
+    })
+    .sort((a, b) => {
+      const bucketA = getDistanceBucket(a.distanceKm)
+      const bucketB = getDistanceBucket(b.distanceKm)
+      const distanceA = a.distanceKm ?? Number.POSITIVE_INFINITY
+      const distanceB = b.distanceKm ?? Number.POSITIVE_INFINITY
+      return (
+        bucketA - bucketB ||
+        a.exactServiceRank - b.exactServiceRank ||
+        (a.nextSlots?.rankMinutes ?? Number.POSITIVE_INFINITY) -
+          (b.nextSlots?.rankMinutes ?? Number.POSITIVE_INFINITY) ||
+        (a.cheapestPrice ?? Number.POSITIVE_INFINITY) - (b.cheapestPrice ?? Number.POSITIVE_INFINITY) ||
+        distanceA - distanceB ||
+        b.services.length - a.services.length ||
+        a.name.localeCompare(b.name)
+      )
+    })
 
   return (
     <main className="min-h-screen bg-[#1A2033] text-white">
@@ -214,19 +402,7 @@ export default async function SearchPage({
             {sorted.length > 0 ? (
               sorted.map((establishment) => {
               const services = establishment.services.slice(0, 3)
-              const hours = parseBusinessHours(establishment.business_hours)
-              const cheapestPrice = services
-                .map((service) => service.price)
-                .filter((price): price is number => price != null)
-                .sort((a, b) => a - b)[0]
-              const duration = Math.min(...services.map((service) => service.duration_minutes))
-              const slotStep = Math.max(15, Math.round(480 / Math.max(establishment.slots_per_schedule, 1)))
-              const nextSlots = getNextSlots(
-                hours,
-                reservedSlots.filter((slot) => slot.establishment_id === establishment.id),
-                Number.isFinite(duration) ? duration : 30,
-                slotStep,
-              )
+              const nextSlots = establishment.nextSlots
 
               return (
                 <article
@@ -252,6 +428,11 @@ export default async function SearchPage({
                     <p className="mt-1 text-sm leading-6 text-white/72">
                       {establishment.address || establishment.contact || 'Agenda e atendimento online'}
                     </p>
+                    {establishment.distanceLabel ? (
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#8FF0F4]">
+                        {establishment.distanceLabel} de você
+                      </p>
+                    ) : null}
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       {services.map((service) => (
@@ -266,11 +447,11 @@ export default async function SearchPage({
 
                     <div className="mt-4 grid gap-2 text-sm text-white/76 sm:grid-cols-3">
                       <div>
-                        <p className="text-white">{money(cheapestPrice ?? null)}</p>
+                        <p className="text-white">{money(establishment.cheapestPrice)}</p>
                         <p className="mt-1 text-xs text-white/55">a partir de</p>
                       </div>
                       <div>
-                        <p className="text-white">{services[0]?.duration_minutes ?? 30} min</p>
+                        <p className="text-white">{establishment.duration} min</p>
                         <p className="mt-1 text-xs text-white/55">duração base</p>
                       </div>
                       <div>

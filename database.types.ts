@@ -48,6 +48,8 @@ export interface Database {
           neighborhood: string | null
           city: string | null
           state: string | null
+          latitude: number | null
+          longitude: number | null
           created_at: string
         }
         Insert: {
@@ -64,6 +66,8 @@ export interface Database {
           neighborhood?: string | null
           city?: string | null
           state?: string | null
+          latitude?: number | null
+          longitude?: number | null
           created_at?: string
         }
         Update: {
@@ -80,6 +84,8 @@ export interface Database {
           neighborhood?: string | null
           city?: string | null
           state?: string | null
+          latitude?: number | null
+          longitude?: number | null
           created_at?: string
         }
         Relationships: [
@@ -109,6 +115,8 @@ export interface Database {
           neighborhood: string | null
           city: string | null
           state: string | null
+          latitude: number | null
+          longitude: number | null
           whatsapp_phone: string | null
           instagram_url: string | null
           facebook_url: string | null
@@ -141,6 +149,8 @@ export interface Database {
           neighborhood?: string | null
           city?: string | null
           state?: string | null
+          latitude?: number | null
+          longitude?: number | null
           whatsapp_phone?: string | null
           instagram_url?: string | null
           facebook_url?: string | null
@@ -173,6 +183,8 @@ export interface Database {
           neighborhood?: string | null
           city?: string | null
           state?: string | null
+          latitude?: number | null
+          longitude?: number | null
           whatsapp_phone?: string | null
           instagram_url?: string | null
           facebook_url?: string | null
