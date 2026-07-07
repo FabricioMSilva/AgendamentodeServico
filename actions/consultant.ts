@@ -22,6 +22,12 @@ const EstablishmentSchema = z.object({
   slots_per_schedule: z.coerce.number().int().min(1).max(200).default(10),
 })
 
+type FieldErrors = Record<string, string[]>
+
+export type CreateEstablishmentResult =
+  | { success: true; id: string }
+  | { error: FieldErrors }
+
 async function assertSuperAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -29,7 +35,7 @@ async function assertSuperAdmin() {
   if (!isSuperAdmin(user.email)) throw new Error('Forbidden')
 }
 
-export async function createEstablishment(formData: FormData) {
+export async function createEstablishment(formData: FormData): Promise<CreateEstablishmentResult> {
   await assertSuperAdmin()
 
   const parsed = EstablishmentSchema.safeParse({
@@ -47,7 +53,7 @@ export async function createEstablishment(formData: FormData) {
 
   const db = getDb()
 
-  // Check if owner already has an account — handle race with trigger
+  // Verifica se o dono ja tem conta e cobre a corrida com o trigger.
   const { data: existingProfile } = await db
     .from('profiles')
     .select('id')
@@ -58,7 +64,7 @@ export async function createEstablishment(formData: FormData) {
     .from('establishments')
     .insert({
       ...parsed.data,
-      // Pre-link admin_id if user already exists (trigger only fires on signup)
+      // Pre-vincula admin_id se o usuario ja existe (o trigger so roda no cadastro).
       admin_id: existingProfile?.id ?? null,
     })
     .select('id')
@@ -74,7 +80,7 @@ export async function createEstablishment(formData: FormData) {
     return { error: { _form: [error.message] } }
   }
 
-  // If owner already exists, also update their role to admin
+  // Se o dono ja existe, tambem atualiza o perfil para admin.
   if (existingProfile && establishment) {
     const { error: roleError } = await db
       .from('profiles')

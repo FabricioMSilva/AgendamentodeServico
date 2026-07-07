@@ -3,6 +3,7 @@ export type NeedKey =
   | 'Fazer unha'
   | 'Depilação'
   | 'Estética'
+  | 'Tatuagem'
   | 'Clínica'
   | 'Outro'
 
@@ -35,6 +36,11 @@ const needMap: Record<NeedKey, NeedInfo> = {
     subtitle: 'Tratamentos estéticos, limpeza de pele, massagens e protocolos faciais.',
     terms: ['estética', 'facial', 'massagem', 'limpeza', 'tratamento'],
   },
+  Tatuagem: {
+    title: 'Tatuagem e body art',
+    subtitle: 'Estúdios de tatuagem, piercing e arte corporal com profissionais experientes.',
+    terms: ['tatuagem', 'tattoo', 'piercing', 'body art', 'arte corporal'],
+  },
   Clínica: {
     title: 'Clínica e procedimento',
     subtitle: 'Clínicas com atendimento para saúde, estética avançada e procedimentos.',
@@ -43,7 +49,7 @@ const needMap: Record<NeedKey, NeedInfo> = {
   Outro: {
     title: 'Outros atendimentos',
     subtitle: 'Outras opções de saúde e beleza para encontrar o serviço mais próximo.',
-    terms: ['beleza', 'saúde', 'tratamento', 'atendimento'],
+    terms: ['beleza', 'saúde', 'tratamento', 'atendimento', 'tatuagem', 'tattoo', 'piercing'],
   },
 }
 

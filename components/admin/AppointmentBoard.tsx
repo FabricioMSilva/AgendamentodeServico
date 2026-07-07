@@ -9,7 +9,7 @@ import type { AppointmentStatus } from '@/database.types'
 
 dayjs.locale('pt-br')
 
-// Appointments joined with profiles and services — shapes returned by Supabase select
+// Agendamentos unidos com perfis e servicos, no formato retornado pelo select do Supabase.
 type AppointmentWithRelations = {
   id: string
   scheduled_at: string

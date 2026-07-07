@@ -171,6 +171,9 @@ export default function CredentialsAuthForm({ initialMode = 'login', returnTo = 
             inputMode="tel"
             className="w-full rounded-[8px] border border-white/10 bg-[#11172B] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
           />
+          <span className="mt-2 block text-xs leading-5 text-white/56">
+            Use o mesmo número do seu WhatsApp.
+          </span>
         </label>
 
         {isSignup ? (

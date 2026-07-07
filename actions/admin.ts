@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { formatAddress, normalizeCep } from '@/lib/address'
+import { decideAppointmentApproval } from '@/lib/appointments/approval'
 
 async function getAdminEstablishmentId(): Promise<string> {
   const supabase = await createClient()
@@ -729,7 +730,7 @@ export async function suggestService(formData: FormData): Promise<{
   return { success: true }
 }
 
-// ── Appointment management ────────────────────────────────────────────────────
+// ── Gestao de agendamentos ────────────────────────────────────────────────────
 
 export async function confirmAppointment(
   appointmentId: string
@@ -746,35 +747,22 @@ export async function confirmAppointment(
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { data: before } = await supabase
+  const { data: appointment } = await supabase
     .from('appointments')
-    .select('status, total_price')
+    .select('id')
     .eq('id', appointmentId)
     .eq('establishment_id', establishmentId)
     .single()
 
-  const { error } = await supabase
-    .from('appointments')
-    .update({
-      status: 'confirmed',
-      owner_decision_at: new Date().toISOString(),
-      owner_decision_by: user?.id ?? null,
-      customer_confirmation_status: 'awaiting',
-    })
-    .eq('id', appointmentId)
-    .eq('establishment_id', establishmentId)
+  if (!appointment) return { error: 'Agendamento não encontrado.' }
 
-  if (error) return { error: error.message }
-
-  await supabase.from('appointment_events').insert({
-    appointment_id: appointmentId,
-    establishment_id: establishmentId,
-    actor_profile_id: user?.id ?? null,
-    event_type: 'owner_confirmed',
-    status_from: before?.status ?? null,
-    status_to: 'confirmed',
-    amount: before?.total_price ?? null,
+  const result = await decideAppointmentApproval({
+    appointmentId,
+    decision: 'approved',
+    actorProfileId: user?.id ?? null,
+    notes: 'Aprovado pelo painel administrativo.',
   })
+  if (result.error) return { error: result.error }
 
   revalidatePath('/admin/dashboard')
   return { success: true }
@@ -802,6 +790,18 @@ export async function finalizeAppointment(
     .eq('id', appointmentId)
     .eq('establishment_id', establishmentId)
     .single()
+
+  if (outcome === 'cancelled' && before?.status === 'pending') {
+    const result = await decideAppointmentApproval({
+      appointmentId,
+      decision: 'rejected',
+      actorProfileId: user?.id ?? null,
+      notes: 'Recusado pelo painel administrativo.',
+    })
+    if (result.error) return { error: result.error }
+    revalidatePath('/admin/dashboard')
+    return { success: true }
+  }
 
   const { error } = await supabase
     .from('appointments')

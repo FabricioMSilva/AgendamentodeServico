@@ -55,3 +55,110 @@ select {
 .font-brand {
   font-family: var(--font-brand), system-ui, sans-serif;
 }
+
+.ib-booking-calendar {
+  --rdp-accent-color: #ff66b2;
+  --rdp-day-height: 40px;
+  --rdp-day-width: 40px;
+  --rdp-day_button-height: 38px;
+  --rdp-day_button-width: 38px;
+  --rdp-nav_button-height: 34px;
+  --rdp-nav_button-width: 34px;
+}
+
+.ib-booking-calendar .rdp-months {
+  display: flex;
+}
+
+.ib-booking-calendar .rdp-month {
+  width: 100%;
+}
+
+.ib-booking-calendar .rdp-month_caption {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding-right: 76px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.ib-booking-calendar .rdp-nav {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+}
+
+.ib-booking-calendar .rdp-button_previous,
+.ib-booking-calendar .rdp-button_next {
+  display: inline-flex;
+  width: var(--rdp-nav_button-width);
+  height: var(--rdp-nav_button-height);
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.ib-booking-calendar .rdp-chevron {
+  width: 14px;
+  height: 14px;
+  fill: #fff;
+}
+
+.ib-booking-calendar .rdp-month_grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ib-booking-calendar .rdp-weekday {
+  padding: 8px 0;
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.ib-booking-calendar .rdp-day {
+  width: var(--rdp-day-width);
+  height: var(--rdp-day-height);
+  text-align: center;
+}
+
+.ib-booking-calendar .rdp-day_button {
+  display: inline-flex;
+  width: var(--rdp-day_button-width);
+  height: var(--rdp-day_button-height);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.84);
+  font-weight: 700;
+}
+
+.ib-booking-calendar .rdp-day_button:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ib-booking-calendar .rdp-selected .rdp-day_button {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: linear-gradient(135deg, #6a00ff 0%, #ff007f 52%, #ff66b2 100%);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(255, 0, 127, 0.2);
+}
+
+.ib-booking-calendar .rdp-today .rdp-day_button:not(:disabled) {
+  border-color: rgba(143, 240, 244, 0.55);
+}
+
+.ib-booking-calendar .rdp-disabled .rdp-day_button,
+.ib-booking-calendar .rdp-outside .rdp-day_button {
+  color: rgba(255, 255, 255, 0.22);
+}

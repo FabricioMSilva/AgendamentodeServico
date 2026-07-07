@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import dayjs from 'dayjs'
+import { queueOwnerApprovalRequest } from '@/lib/appointments/approval'
 
 const BookSchema = z.object({
   establishment_id: z.string().uuid(),
@@ -25,9 +26,19 @@ const BookSchema = z.object({
   notes: z.string().max(500).optional(),
 })
 
-type BookResult =
+type ActionResult =
   | { success: true; error?: never }
   | { error: Record<string, string[]>; success?: never }
+
+type BookResult =
+  | (ActionResult & {
+      appointmentId: string
+      scheduled_at: string
+      created_at: string
+      customer_name: string
+      customer_phone: string
+    })
+  | ActionResult
 
 export async function bookAppointment(formData: FormData): Promise<BookResult> {
   const supabase = await createClient()
@@ -118,7 +129,7 @@ export async function bookAppointment(formData: FormData): Promise<BookResult> {
       total_price: totalPrice,
       total_duration_minutes: totalDuration,
     })
-    .select('id')
+    .select('id, scheduled_at, created_at')
     .single()
 
   if (error) {
@@ -155,6 +166,63 @@ export async function bookAppointment(formData: FormData): Promise<BookResult> {
     status_to: 'pending',
     amount: totalPrice,
     notes: parsed.data.notes ?? null,
+  })
+
+  await queueOwnerApprovalRequest(appointment.id)
+
+  revalidatePath('/')
+  return {
+    success: true,
+    appointmentId: appointment.id,
+    scheduled_at: appointment.scheduled_at,
+    created_at: appointment.created_at ?? new Date().toISOString(),
+    customer_name: parsed.data.customer_name,
+    customer_phone: parsed.data.customer_phone,
+  }
+}
+
+export async function cancelAppointment(appointmentId: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
+  const { data: appointment, error: fetchError } = await supabase
+    .from('appointments')
+    .select('status, customer_id, establishment_id')
+    .eq('id', appointmentId)
+    .single()
+
+  if (fetchError) return { error: { _form: [fetchError.message] } }
+  if (!appointment) return { error: { _form: ['Agendamento não encontrado.'] } }
+  if (appointment.customer_id !== user.id) {
+    return { error: { _form: ['Este agendamento não pertence a você.'] } }
+  }
+
+  if (appointment.status === 'cancelled') {
+    return { error: { _form: ['Este agendamento já foi cancelado.'] } }
+  }
+
+  const { error } = await supabase.from('appointments').update({
+    status: 'cancelled',
+    cancelled_reason: 'Cancelado pelo cliente',
+    customer_declined_at: new Date().toISOString(),
+    customer_confirmation_status: 'declined',
+  })
+  .eq('id', appointmentId)
+
+  if (error) return { error: { _form: [error.message] } }
+
+  await supabase.from('appointment_events').insert({
+    appointment_id: appointmentId,
+    establishment_id: appointment.establishment_id,
+    actor_profile_id: user.id,
+    event_type: 'customer_declined',
+    status_from: appointment.status,
+    status_to: 'cancelled',
+    amount: null,
   })
 
   revalidatePath('/')

@@ -7,9 +7,9 @@ const withPWA = require('next-pwa')({
   skipWaiting: true,
 })
 
-// CSP: only allow scripts/styles from self and Supabase.
-// 'unsafe-inline' for styles is required by Tailwind + react-day-picker.
-// Next/React need 'unsafe-eval' in development for enhanced debugging.
+// CSP: permite scripts/estilos apenas da propria aplicacao e do Supabase.
+// 'unsafe-inline' em estilos e necessario para Tailwind + react-day-picker.
+// Next/React precisam de 'unsafe-eval' em desenvolvimento para depuracao.
 const isDev = process.env.NODE_ENV === 'development'
 
 const ContentSecurityPolicy = `

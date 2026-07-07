@@ -3,7 +3,8 @@ import type { Metadata } from 'next'
 import dayjs from 'dayjs'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getNeedInfo, getNeedTerms, type SearchMode } from '@/lib/search/needs'
+import { createPublicClient } from '@/lib/supabase/public'
+import { getNeedInfo, getNeedTerms } from '@/lib/search/needs'
 import type { Database, Service } from '@/database.types'
 
 type BusinessHours = Record<string, { open: string; close: string } | null>
@@ -16,26 +17,22 @@ type ReservedSlot = {
 
 type SearchParams = {
   need?: string
-  mode?: string
 }
 
 type EstablishmentWithServices = Database['public']['Tables']['establishments']['Row'] & {
   services: Service[]
 }
 
-type UserLocation = Pick<
-  Database['public']['Tables']['profiles']['Row'],
-  'zip_code' | 'neighborhood' | 'city' | 'state' | 'latitude' | 'longitude'
->
-
 type LocationFields = {
   zip_code: string | null
   neighborhood: string | null
   city: string | null
   state: string | null
-  latitude: number | null
-  longitude: number | null
+  latitude?: number | null
+  longitude?: number | null
 }
+
+type UserLocation = LocationFields
 
 type NextSlots = {
   label: string
@@ -58,6 +55,7 @@ const categoryLabels: Record<string, string> = {
   'Fazer unha': 'unhas',
   Depilação: 'depilação',
   Estética: 'estética',
+  Tatuagem: 'tatuagem',
   Clínica: 'clínica',
   Outro: 'geral',
 }
@@ -76,6 +74,29 @@ function normalizeText(value: string | null | undefined) {
 
 function normalizeZip(value: string | null | undefined) {
   return (value ?? '').replace(/\D/g, '')
+}
+
+function getAddressLocationFallback(address: string | null | undefined): Partial<LocationFields> {
+  const match = (address ?? '').match(/,\s*([^,]+?)\s*-\s*([A-Za-z]{2})\s*$/)
+  if (!match) return {}
+
+  return {
+    city: match[1].trim(),
+    state: match[2].trim().toUpperCase(),
+  }
+}
+
+function getLocationFields(
+  location: LocationFields,
+  address?: string | null,
+): LocationFields {
+  const fallback = getAddressLocationFallback(address)
+
+  return {
+    ...location,
+    city: location.city ?? fallback.city ?? null,
+    state: location.state ?? fallback.state ?? null,
+  }
 }
 
 function toRadians(value: number) {
@@ -127,11 +148,17 @@ function getDistanceKm(origin: LocationFields | null, target: LocationFields) {
   return getCoordinateDistanceKm(origin, target) ?? getAddressDistanceRank(origin, target)
 }
 
+const MAX_ESTABLISHMENT_DISTANCE_KM = 200
+
 function formatDistance(distanceKm: number | null) {
   if (distanceKm == null) return null
   if (distanceKm < 1) return 'menos de 1 km'
   if (distanceKm < 10) return `${distanceKm.toFixed(1)} km`
   return `${Math.round(distanceKm)} km`
+}
+
+function isWithinSearchRadius(distanceKm: number | null) {
+  return distanceKm == null || distanceKm <= MAX_ESTABLISHMENT_DISTANCE_KM
 }
 
 function getDistanceBucket(distanceKm: number | null) {
@@ -252,22 +279,22 @@ export default async function SearchPage({
 }) {
   const params = await searchParams
   const need = getNeedInfo(params?.need)
-  const mode = (params?.mode === 'horario' ? 'horario' : 'estabelecimento') as SearchMode
   const terms = getNeedTerms(params?.need)
 
   const supabase = await createClient()
+  const publicDb = createPublicClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   const [establishmentsResult, profileResult] = await Promise.all([
-    supabase
+    publicDb
       .from('establishments')
-      .select('id, slug, name, address, contact, whatsapp_phone, logo_url, business_hours, slots_per_schedule, zip_code, neighborhood, city, state, latitude, longitude, services(id, name, price, price_type, duration_minutes, category, description, image_url, is_active)')
+      .select('id, slug, name, address, contact, whatsapp_phone, logo_url, business_hours, slots_per_schedule, zip_code, neighborhood, city, state, services(id, name, price, price_type, duration_minutes, category, description, image_url, is_active)')
       .eq('is_blocked', false),
     user
       ? supabase
           .from('profiles')
-          .select('zip_code, neighborhood, city, state, latitude, longitude')
+          .select('zip_code, neighborhood, city, state')
           .eq('id', user.id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -319,51 +346,55 @@ export default async function SearchPage({
     reservedSlots.push(...((reservedRaw ?? []) as ReservedSlot[]))
   }
 
-  const sorted: RankedEstablishment[] = candidates
-    .map((establishment) => {
-      const services = establishment.services
-      const prices = services
-        .map((service) => service.price)
-        .filter((price): price is number => price != null)
-      const cheapestPrice = prices.sort((a, b) => a - b)[0] ?? null
-      const duration = Math.min(...services.map((service) => service.duration_minutes))
-      const slotStep = Math.max(15, Math.round(480 / Math.max(establishment.slots_per_schedule, 1)))
-      const hours = parseBusinessHours(establishment.business_hours)
-      const nextSlots = getNextSlots(
-        hours,
-        reservedSlots.filter((slot) => slot.establishment_id === establishment.id),
-        Number.isFinite(duration) ? duration : 30,
-        slotStep,
-      )
-      const distanceKm = getDistanceKm(userLocation, establishment)
+  const rankedEstablishments = candidates.map((establishment) => {
+    const services = establishment.services
+    const prices = services
+      .map((service) => service.price)
+      .filter((price): price is number => price != null)
+    const cheapestPrice = prices.sort((a, b) => a - b)[0] ?? null
+    const duration = Math.min(...services.map((service) => service.duration_minutes))
+    const slotStep = Math.max(15, Math.round(480 / Math.max(establishment.slots_per_schedule, 1)))
+    const hours = parseBusinessHours(establishment.business_hours)
+    const nextSlots = getNextSlots(
+      hours,
+      reservedSlots.filter((slot) => slot.establishment_id === establishment.id),
+      Number.isFinite(duration) ? duration : 30,
+      slotStep,
+    )
+    const establishmentLocation = getLocationFields(establishment, establishment.address)
+    const distanceKm = getDistanceKm(userLocation, establishmentLocation)
 
-      return {
-        ...establishment,
-        distanceKm,
-        distanceLabel: formatDistance(distanceKm),
-        exactServiceRank: getExactServiceRank(services, terms),
-        cheapestPrice,
-        duration: Number.isFinite(duration) ? duration : 30,
-        slotStep,
-        nextSlots,
-      }
-    })
-    .sort((a, b) => {
-      const bucketA = getDistanceBucket(a.distanceKm)
-      const bucketB = getDistanceBucket(b.distanceKm)
-      const distanceA = a.distanceKm ?? Number.POSITIVE_INFINITY
-      const distanceB = b.distanceKm ?? Number.POSITIVE_INFINITY
-      return (
-        bucketA - bucketB ||
-        a.exactServiceRank - b.exactServiceRank ||
-        (a.nextSlots?.rankMinutes ?? Number.POSITIVE_INFINITY) -
-          (b.nextSlots?.rankMinutes ?? Number.POSITIVE_INFINITY) ||
-        (a.cheapestPrice ?? Number.POSITIVE_INFINITY) - (b.cheapestPrice ?? Number.POSITIVE_INFINITY) ||
-        distanceA - distanceB ||
-        b.services.length - a.services.length ||
-        a.name.localeCompare(b.name)
-      )
-    })
+    return {
+      ...establishment,
+      distanceKm,
+      distanceLabel: formatDistance(distanceKm),
+      exactServiceRank: getExactServiceRank(services, terms),
+      cheapestPrice,
+      duration: Number.isFinite(duration) ? duration : 30,
+      slotStep,
+      nextSlots,
+    }
+  })
+
+  const sortEstablishments = (a: RankedEstablishment, b: RankedEstablishment) => {
+    const bucketA = getDistanceBucket(a.distanceKm)
+    const bucketB = getDistanceBucket(b.distanceKm)
+    const distanceA = a.distanceKm ?? Number.POSITIVE_INFINITY
+    const distanceB = b.distanceKm ?? Number.POSITIVE_INFINITY
+    return (
+      bucketA - bucketB ||
+      distanceA - distanceB ||
+      a.exactServiceRank - b.exactServiceRank ||
+      (a.nextSlots?.rankMinutes ?? Number.POSITIVE_INFINITY) -
+        (b.nextSlots?.rankMinutes ?? Number.POSITIVE_INFINITY) ||
+      (a.cheapestPrice ?? Number.POSITIVE_INFINITY) - (b.cheapestPrice ?? Number.POSITIVE_INFINITY) ||
+      b.services.length - a.services.length ||
+      a.name.localeCompare(b.name)
+    )
+  }
+
+  // Do not filter establishments by distance — show all candidates sorted
+  const sorted: RankedEstablishment[] = rankedEstablishments.sort(sortEstablishments)
 
   return (
     <main className="min-h-screen bg-[#1A2033] text-white">
@@ -386,13 +417,13 @@ export default async function SearchPage({
 
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             <span className="rounded-full bg-white/8 px-4 py-2 text-xs font-semibold text-white/80">
-              {mode === 'horario' ? 'Ver por horário' : 'Ver por estabelecimento'}
-            </span>
-            <span className="rounded-full bg-white/8 px-4 py-2 text-xs font-semibold text-white/80">
               {sorted.length} opções
             </span>
             <span className="rounded-full bg-white/8 px-4 py-2 text-xs font-semibold text-white/80">
               foco em {categoryLabels[need.key]}
+            </span>
+            <span className="rounded-full bg-white/8 px-4 py-2 text-xs font-semibold text-white/80">
+              até {MAX_ESTABLISHMENT_DISTANCE_KM} km
             </span>
           </div>
         </div>
@@ -515,13 +546,7 @@ export default async function SearchPage({
                 <p className="text-sm text-white/66">Necessidade</p>
                 <p className="mt-1 font-semibold text-white">{need.key}</p>
               </div>
-              <div className="rounded-[8px] bg-white/8 p-4">
-                <p className="text-sm text-white/66">Modo</p>
-                <p className="mt-1 font-semibold text-white">
-                  {mode === 'horario' ? 'Buscar por horário' : 'Escolher estabelecimento'}
-                </p>
-              </div>
-              <div className="rounded-[8px] bg-white/8 p-4">
+                <div className="rounded-[8px] bg-white/8 p-4">
                 <p className="text-sm text-white/66">Próximo passo</p>
                 <p className="mt-1 font-semibold text-white">Abrir a agenda do local e confirmar o horário</p>
               </div>

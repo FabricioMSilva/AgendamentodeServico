@@ -3,8 +3,7 @@ import CreateEstablishmentForm from '@/components/sales/CreateEstablishmentForm'
 import { setEstablishmentBlocked } from '@/actions/consultant'
 
 export default async function SalesDashboard() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = createAdminClient() as any
+  const db = createAdminClient()
   const { data: establishments } = await db
     .from('establishments')
     .select('id, name, slug, owner_email, is_blocked, admin_id, profiles(name, email)')
@@ -26,7 +25,7 @@ export default async function SalesDashboard() {
       <section>
         <h2 className="mb-4 text-lg font-semibold text-white">Todos os estabelecimentos</h2>
         <div className="divide-y divide-white/10 rounded-[8px] border border-white/10 bg-white/6">
-          {establishments?.map((e: any) => {
+          {establishments?.map((e) => {
             const blockAction = async () => {
               'use server'
               await setEstablishmentBlocked(e.id, !e.is_blocked)

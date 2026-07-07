@@ -8,9 +8,7 @@ import { getNeedInfo } from '@/lib/search/needs'
 
 type Role = 'cliente' | 'negocio' | null
 type Access = 'visitante' | 'autenticado' | null
-type ClientNeed = 'Cortar cabelo' | 'Fazer unha' | 'Depilação' | 'Estética' | 'Clínica' | 'Outro' | null
-type SearchMode = 'estabelecimento' | 'horario' | null
-
+type ClientNeed = 'Cortar cabelo' | 'Fazer unha' | 'Depilação' | 'Estética' | 'Tatuagem' | 'Clínica' | 'Outro' | null
 type InitialIdentity = {
   name: string | null
   email: string | null
@@ -21,21 +19,9 @@ const clientNeedOptions: Exclude<ClientNeed, null>[] = [
   'Fazer unha',
   'Depilação',
   'Estética',
+  'Tatuagem',
   'Clínica',
   'Outro',
-]
-
-const searchModeOptions: Array<{ label: string; value: Exclude<SearchMode, null>; helper: string }> = [
-  {
-    label: 'Ver estabelecimentos',
-    value: 'estabelecimento',
-    helper: 'Primeiro escolher o lugar, depois a agenda.',
-  },
-  {
-    label: 'Ver por horário',
-    value: 'horario',
-    helper: 'Ir direto para a vaga livre do dia.',
-  },
 ]
 
 function getGreetingLabel(referenceDate = new Date()) {
@@ -58,7 +44,6 @@ export default function EntryQuiz({ initialIdentity = null }: { initialIdentity?
   const [access, setAccess] = useState<Access>(initialIdentity ? 'autenticado' : null)
   const [displayName, setDisplayName] = useState<string | null>(getDisplayName(initialIdentity))
   const [clientNeed, setClientNeed] = useState<ClientNeed>(null)
-  const [searchMode, setSearchMode] = useState<SearchMode>(null)
   const [animateIn, setAnimateIn] = useState(true)
 
   useEffect(() => {
@@ -68,8 +53,8 @@ export default function EntryQuiz({ initialIdentity = null }: { initialIdentity?
   }, [initialIdentity])
 
   const viewKey = useMemo(
-    () => `${access ?? 'none'}:${role ?? 'none'}:${clientNeed ?? 'none'}:${searchMode ?? 'none'}`,
-    [access, clientNeed, role, searchMode],
+    () => `${access ?? 'none'}:${role ?? 'none'}:${clientNeed ?? 'none'}`,
+    [access, clientNeed, role],
   )
 
   useEffect(() => {
@@ -82,8 +67,8 @@ export default function EntryQuiz({ initialIdentity = null }: { initialIdentity?
   const greetingText = access === 'autenticado' && displayName ? `${greetingLabel}, ${displayName}` : greetingLabel
   const searchNeed = clientNeed ? getNeedInfo(clientNeed).key : null
   const resultsHref =
-    role === 'cliente' && clientNeed && searchMode
-      ? `/buscar?need=${encodeURIComponent(searchNeed ?? 'Outro')}&mode=${searchMode}`
+    role === 'cliente' && clientNeed
+      ? `/buscar?need=${encodeURIComponent(searchNeed ?? 'Outro')}`
       : '/buscar'
 
   const panelClass = [
@@ -203,27 +188,6 @@ export default function EntryQuiz({ initialIdentity = null }: { initialIdentity?
                   ))}
                 </div>
               </div>
-            ) : searchMode === null ? (
-              <div className="text-center">
-                <p className="text-xl font-semibold text-white sm:text-2xl md:text-[2rem]">Como você quer buscar?</p>
-                <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/72 sm:text-base">
-                  Você escolheu <span className="font-semibold text-white">{clientNeed.toLowerCase()}</span>.
-                </p>
-
-                <div className="mt-7 grid gap-3 sm:grid-cols-2">
-                  {searchModeOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setSearchMode(option.value)}
-                      className="rounded-full bg-white/8 px-5 py-4 text-center transition hover:bg-white/12 sm:py-5"
-                    >
-                      <span className="block text-sm font-semibold text-white sm:text-base">{option.label}</span>
-                      <span className="mt-1 block text-xs leading-5 text-white/68 sm:text-sm">{option.helper}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
             ) : (
               <div className="text-center">
                 <p className="text-xl font-semibold text-white sm:text-2xl md:text-[2rem]">Pronto</p>
@@ -233,9 +197,7 @@ export default function EntryQuiz({ initialIdentity = null }: { initialIdentity?
 
                 <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
                   <div className="p-0 text-xs leading-5 text-white/70 sm:text-sm">
-                    {searchMode === 'horario'
-                      ? 'Você vai direto para os horários livres do dia.'
-                      : 'Você vai primeiro escolher o estabelecimento e depois ver a agenda.'}
+                    Você vai direto para os horários livres disponíveis.
                   </div>
                   <Link
                     href={resultsHref}

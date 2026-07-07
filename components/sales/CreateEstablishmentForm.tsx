@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { createEstablishment } from '@/actions/consultant'
+import type { CreateEstablishmentResult } from '@/actions/consultant'
 
 export default function CreateEstablishmentForm() {
   const formRef = useRef<HTMLFormElement>(null)
@@ -17,10 +18,9 @@ export default function CreateEstablishmentForm() {
     setErrors({})
     setSuccess(false)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await createEstablishment(new FormData(e.currentTarget)) as any
+    const result: CreateEstablishmentResult = await createEstablishment(new FormData(e.currentTarget))
 
-    if (result?.error) {
+    if ('error' in result) {
       setErrors(typeof result.error === 'string' ? { _form: [result.error] } : result.error)
     } else {
       setSuccess(true)

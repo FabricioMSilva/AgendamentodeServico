@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   description: 'Gerencie seus agendamentos, procedimentos e perfil do negócio.',
 }
 
-// Shape of appointment rows joined with profiles + services
+// Formato dos agendamentos unidos com perfis e servicos.
 type AppointmentRow = {
   id: string
   scheduled_at: string
@@ -145,7 +145,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
       .limit(200),
   ])
 
-  // Type-narrow the joined rows
+  // Estreita os tipos das linhas retornadas pelos joins.
   const appointments: AppointmentRow[] = (rawAppointments ?? []).map((a) => ({
     id: a.id,
     scheduled_at: a.scheduled_at,

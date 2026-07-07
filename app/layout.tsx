@@ -27,8 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="pt-BR"
-      className={`${plusJakarta.variable} ${fredoka.variable} h-full antialiased`}
+      lang="pt-BR"      data-scroll-behavior="smooth"      className={`${plusJakarta.variable} ${fredoka.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

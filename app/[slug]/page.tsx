@@ -6,10 +6,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import BlockedScreen from '@/components/customer/BlockedScreen'
 import BookingForm from '@/components/customer/BookingForm'
+import EstablishmentInfoMenu from '@/components/customer/EstablishmentInfoMenu'
 import type { EstablishmentMedia, Service } from '@/database.types'
 
 type BusinessHours = Record<string, { open: string; close: string } | null>
-type ReservedSlot = { scheduled_at: string; total_duration_minutes: number }
+type ReservedSlot = {
+  scheduled_at: string
+  total_duration_minutes: number
+  customer_name: string | null
+}
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -31,7 +36,20 @@ function money(value: number | null) {
   return value == null ? 'Sob consulta' : `R$ ${Number(value).toFixed(2)}`
 }
 
-// React cache deduplicates this across generateMetadata + page() in the same request
+const weekdayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
+function formatBusinessHours(hours: BusinessHours) {
+  return weekdayLabels.map((label, index) => {
+    const slot = hours[String(index)]
+    return {
+      label,
+      value: slot ? `${slot.open} - ${slot.close}` : 'Fechado',
+      open: Boolean(slot),
+    }
+  })
+}
+
+// O cache do React deduplica esta busca entre generateMetadata e page() na mesma request.
 const getEstablishment = cache(async (slug: string) => {
   const supabase = await createClient()
   const { data } = await supabase
@@ -73,7 +91,7 @@ export default async function SlugPage({ params }: Props) {
   const [{ data: reservedSlots }, { data: mediaRaw }] = await Promise.all([
     db
       .from('appointments')
-      .select('scheduled_at, total_duration_minutes')
+      .select('scheduled_at, total_duration_minutes, customer_name')
       .eq('establishment_id', est.id)
       .in('status', ['pending', 'confirmed', 'checked_in'])
       .gte('scheduled_at', new Date().toISOString())
@@ -91,218 +109,154 @@ export default async function SlugPage({ params }: Props) {
   const services = (est.services ?? [])
     .filter((service) => service.is_active)
     .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
-  const highlightedServices = services
-    .slice()
-    .sort((a, b) => {
-      const priceA = a.price ?? Number.POSITIVE_INFINITY
-      const priceB = b.price ?? Number.POSITIVE_INFINITY
-      return priceA - priceB || a.duration_minutes - b.duration_minutes
-    })
-    .slice(0, 3)
   const hours = (est.business_hours as BusinessHours) ?? {}
   const openDays = Object.values(hours).filter(Boolean).length
   const initials = getInitials(est.name)
   const gallery = ((mediaRaw ?? []) as EstablishmentMedia[]).filter((item) => item.media_type === 'image')
+  const heroImage = gallery[0]?.url ?? est.logo_url
+  const categoryGroups = Array.from(
+    services.reduce((groups, service) => {
+      const list = groups.get(service.category) ?? []
+      list.push(service)
+      groups.set(service.category, list)
+      return groups
+    }, new Map<string, Service[]>()),
+  )
+  const cheapestService = services
+    .filter((service) => service.price != null)
+    .sort((a, b) => Number(a.price) - Number(b.price))[0]
+  const totalMinutes = services.reduce((sum, service) => sum + service.duration_minutes, 0)
+  const averageDuration = services.length > 0 ? Math.round(totalMinutes / services.length) : 0
+  const scheduleRows = formatBusinessHours(hours)
+  const socials = [
+    est.instagram_url ? { label: 'Instagram', href: est.instagram_url } : null,
+    est.facebook_url ? { label: 'Facebook', href: est.facebook_url } : null,
+    est.tiktok_url ? { label: 'TikTok', href: est.tiktok_url } : null,
+    est.youtube_url ? { label: 'YouTube', href: est.youtube_url } : null,
+  ].filter((item): item is { label: string; href: string } => Boolean(item))
+  const modalServices = services.map((service) => ({
+    id: service.id,
+    name: service.name,
+    category: service.category,
+    description: service.description,
+    duration: service.duration_minutes,
+    price: money(service.price),
+  }))
+  const modalPhotos = gallery.slice(0, 12).map((item) => ({
+    id: item.id,
+    url: item.url,
+    title: item.title,
+  }))
+  const cityState = est.city || est.state
+    ? [est.city, est.state].filter(Boolean).join(' - ')
+    : 'Cidade não informada'
 
   return (
-    <main className="min-h-screen bg-[#1A2033] text-white">
-      <section className="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-        <div className="grid gap-5 lg:grid-cols-[1.02fr_0.98fr]">
-          <header className="relative overflow-hidden rounded-[8px] bg-[linear-gradient(180deg,#11172a_0%,#171f38_55%,#241737_100%)] p-5 ring-1 ring-white/10 sm:p-7">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,0,127,0.26),transparent_28%),radial-gradient(circle_at_20%_20%,rgba(0,196,204,0.16),transparent_24%)]" />
-            <div className="relative z-10 flex h-full flex-col justify-between gap-8">
-              <div className="space-y-5">
-                <div className="flex items-center gap-3">
-                  <img
-                    src="/imagens/ibeleza.png"
-                    alt="IBeleza"
-                    className="h-9 w-auto object-contain sm:h-10"
-                  />
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.28em] text-white/55 sm:text-[11px]">
-                      IBeleza
-                    </p>
-                    <p className="text-sm text-white/75">Saúde e beleza no mesmo fluxo</p>
-                  </div>
-                </div>
+    <main className="h-svh overflow-hidden bg-[#0c1120] text-white">
+      <div className="mx-auto grid h-full max-w-7xl grid-rows-[auto_minmax(0,1fr)] gap-3 px-3 py-3 sm:px-4">
+        <nav className="flex h-10 items-center justify-between gap-4">
+          <Link href="/" className="inline-flex items-center gap-3">
+            <img src="/imagens/ibeleza.png" alt="IBeleza" className="h-8 w-auto object-contain" />
+            <span className="hidden text-xs uppercase tracking-[0.24em] text-white/52 sm:inline">
+              agenda online
+            </span>
+          </Link>
+          <Link
+            href="#agendar"
+            className="inline-flex min-h-9 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-[#11172b] transition hover:bg-white/90"
+          >
+            Agendar
+          </Link>
+        </nav>
 
-                <div className="inline-flex rounded-full bg-white/8 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/72 ring-1 ring-white/10">
-                  Agenda online
+        <div className="grid min-h-0 gap-3 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <aside className="grid min-h-0 gap-3 overflow-hidden rounded-[8px] bg-[#12182b] p-3 ring-1 ring-white/10">
+            <div className="relative min-h-[140px] overflow-hidden rounded-[8px] bg-[#20283c] ring-1 ring-white/10 lg:min-h-0">
+              {heroImage ? (
+                <img
+                  src={heroImage}
+                  alt={gallery[0]?.title || est.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center bg-[#161d31] text-5xl font-semibold text-white/28">
+                  {initials}
                 </div>
-
-                <div className="flex items-start gap-4">
-                  {est.logo_url ? (
-                    <img
-                      src={est.logo_url}
-                      alt={`Logo de ${est.name}`}
-                      className="h-16 w-16 rounded-[8px] object-cover shadow-[0_16px_30px_rgba(106,0,255,0.28)] ring-1 ring-white/15 sm:h-20 sm:w-20"
-                    />
-                  ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-[8px] bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-xl font-semibold text-white shadow-[0_16px_30px_rgba(106,0,255,0.28)] sm:h-20 sm:w-20 sm:text-2xl">
-                      {initials}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <h1 className="font-brand text-4xl leading-[0.92] text-white sm:text-5xl">
-                      {est.name}
-                    </h1>
-                    <p className="mt-3 max-w-xl text-sm leading-6 text-white/76 sm:text-base">
-                      Escolha serviços, compare valores e veja os horários livres antes de reservar.
-                      O salão confirma e te avisa pelo WhatsApp.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full bg-white/8 px-3 py-2 text-xs font-medium text-white/78 ring-1 ring-white/10">
-                    Combine mais de um serviço
-                  </span>
-                  <span className="rounded-full bg-white/8 px-3 py-2 text-xs font-medium text-white/78 ring-1 ring-white/10">
-                    Lembrete 12h antes
-                  </span>
-                  <span className="rounded-full bg-white/8 px-3 py-2 text-xs font-medium text-white/78 ring-1 ring-white/10">
-                    Toque no horário livre
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-[8px] bg-white/7 p-4 ring-1 ring-white/10">
-                  <p className="text-2xl font-semibold">{services.length}</p>
-                  <p className="mt-1 text-xs text-white/62">procedimentos ativos</p>
-                </div>
-                <div className="rounded-[8px] bg-white/7 p-4 ring-1 ring-white/10">
-                  <p className="text-2xl font-semibold">{est.slots_per_schedule}</p>
-                  <p className="mt-1 text-xs text-white/62">encaixes por dia</p>
-                </div>
-                <div className="rounded-[8px] bg-white/7 p-4 ring-1 ring-white/10">
-                  <p className="text-2xl font-semibold">12h</p>
-                  <p className="mt-1 text-xs text-white/62">lembrete antes</p>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <div className="grid gap-4">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[8px] bg-white/7 p-4 ring-1 ring-white/10">
-                <p className="text-xs uppercase tracking-[0.18em] text-white/56">Hoje</p>
-                <p className="mt-2 text-2xl font-semibold">Agenda viva</p>
-                <p className="mt-1 text-sm text-white/68">Toque em um serviço e veja as vagas livres.</p>
-              </div>
-              <div className="rounded-[8px] bg-white/7 p-4 ring-1 ring-white/10">
-                <p className="text-xs uppercase tracking-[0.18em] text-white/56">Horários</p>
-                <p className="mt-2 text-2xl font-semibold">{openDays} dias</p>
-                <p className="mt-1 text-sm text-white/68">Com agenda configurada no estabelecimento.</p>
-              </div>
-              <div className="rounded-[8px] bg-white/7 p-4 ring-1 ring-white/10">
-                <p className="text-xs uppercase tracking-[0.18em] text-white/56">Contato</p>
-                <p className="mt-2 text-2xl font-semibold">WhatsApp</p>
-                <p className="mt-1 text-sm text-white/68">Confirmação e lembrete direto com a equipe.</p>
+              )}
+              <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,transparent_0%,rgba(12,17,32,0.92)_100%)] p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/52">destaque</p>
+                <p className="mt-1 text-sm font-semibold leading-snug">Serviços, fotos e agenda em um só lugar.</p>
               </div>
             </div>
 
-            <div className="rounded-[8px] bg-white/7 p-5 ring-1 ring-white/10">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/56">
-                    Monte seu atendimento
-                  </p>
-                  <h2 className="mt-2 font-brand text-2xl leading-tight text-white sm:text-3xl">
-                    Combine serviços e escolha uma vaga que caiba tudo.
-                  </h2>
+            <div className="flex items-center gap-3">
+              {est.logo_url ? (
+                <img src={est.logo_url} alt={`Logo de ${est.name}`} className="h-11 w-11 rounded-[8px] object-cover ring-1 ring-white/15" />
+              ) : (
+                <div className="flex h-11 w-11 items-center justify-center rounded-[8px] bg-[#ff2f92] text-sm font-semibold text-white ring-1 ring-white/15">
+                  {initials}
                 </div>
-
-                <Link
-                  href="#agendar"
-                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] px-5 text-sm font-semibold text-white transition hover:opacity-95"
-                >
-                  Ver horários
-                </Link>
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8FF0F4]">
+                  {est.business_type?.replace(/_/g, ' ') || 'beleza'}
+                </p>
+                <h1 className="mt-1 truncate font-brand text-3xl leading-none text-white">{est.name}</h1>
+                <p className="mt-1 text-xs text-white/55">{openDays} dias de atendimento na semana</p>
               </div>
-
-              <div className="mt-5 space-y-3">
-                {highlightedServices.map((service) => (
-                  <div
-                    key={service.id}
-                    className="flex items-center justify-between gap-4 rounded-[8px] bg-white/8 px-4 py-3 ring-1 ring-white/10"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-white">{service.name}</p>
-                      <p className="mt-1 text-xs text-white/62">
-                        {service.category} · {service.duration_minutes} min
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-white">{money(service.price)}</p>
-                      <p className="mt-1 text-xs text-white/55">a partir de</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[8px] bg-[#0f1527] p-4 ring-1 ring-white/10">
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/48">Endereço</p>
-                  <p className="mt-2 text-sm leading-6 text-white/82">
-                    {est.address || 'Endereço não informado'}
-                  </p>
-                </div>
-                <div className="rounded-[8px] bg-[#0f1527] p-4 ring-1 ring-white/10">
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/48">Contato</p>
-                  <p className="mt-2 text-sm leading-6 text-white/82">
-                    {est.contact || 'Contato não informado'}
-                  </p>
-                </div>
-              </div>
-
-              {gallery.length > 0 ? (
-                <div className="mt-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/48">
-                    Fotos
-                  </p>
-                  <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-2">
-                    {gallery.map((item) => (
-                      <img
-                        key={item.id}
-                        src={item.url}
-                        alt={item.title ?? ''}
-                        className="aspect-[4/3] w-64 shrink-0 snap-start rounded-[8px] object-cover ring-1 ring-white/10"
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
             </div>
-          </div>
-        </div>
-      </section>
 
-      <section id="agendar" className="mx-auto max-w-6xl px-4 pb-14 sm:px-6 lg:px-8">
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.26em] text-white/48">
-              Escolha e reserve
-            </p>
-            <h2 className="mt-2 font-brand text-3xl text-white sm:text-4xl">
-              Agende em poucos toques
-            </h2>
-          </div>
-          <p className="max-w-xl text-sm leading-6 text-white/64">
-            Selecione um ou mais procedimentos, escolha a data e toque em um horário livre.
-          </p>
-        </div>
+            <EstablishmentInfoMenu
+              services={modalServices}
+              photos={modalPhotos}
+              schedule={scheduleRows}
+              address={est.address || 'Endereço não informado'}
+              cityState={cityState}
+              contact={est.contact || est.whatsapp_phone || 'Contato não informado'}
+              socials={socials}
+            />
 
-        <div className="rounded-[8px] bg-white/6 p-4 shadow-[0_28px_60px_rgba(0,0,0,0.16)] ring-1 ring-white/10 sm:p-5">
-        <BookingForm
-          establishmentId={est.id}
-          services={services}
-          businessHours={hours}
-          slotsPerSchedule={est.slots_per_schedule}
-          reservedSlots={(reservedSlots ?? []) as ReservedSlot[]}
-        />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-[8px] bg-white/6 p-2 ring-1 ring-white/8">
+                <p className="text-lg font-semibold">{services.length}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/45">serviços</p>
+              </div>
+              <div className="rounded-[8px] bg-white/6 p-2 ring-1 ring-white/8">
+                <p className="text-lg font-semibold">{categoryGroups.length}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/45">categorias</p>
+              </div>
+              <div className="rounded-[8px] bg-white/6 p-2 ring-1 ring-white/8">
+                <p className="text-lg font-semibold">{averageDuration || '--'}min</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/45">média</p>
+              </div>
+              <div className="rounded-[8px] bg-white/6 p-2 ring-1 ring-white/8">
+                <p className="truncate text-lg font-semibold">{cheapestService ? money(cheapestService.price) : '--'}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/45">a partir</p>
+              </div>
+            </div>
+          </aside>
+
+          <section id="agendar" className="min-h-0 overflow-hidden rounded-[8px] bg-white/6 p-3 shadow-[0_28px_60px_rgba(0,0,0,0.16)] ring-1 ring-white/10">
+            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.24em] text-[#8FF0F4]">reserve</p>
+                <h2 className="mt-0.5 font-brand text-3xl leading-none text-white">Escolha o horário.</h2>
+              </div>
+              <p className="max-w-md text-xs leading-5 text-white/62">
+                Toque em um procedimento e escolha um dia com vaga.
+              </p>
+            </div>
+
+            <BookingForm
+              establishmentId={est.id}
+              services={services}
+              businessHours={hours}
+              slotsPerSchedule={est.slots_per_schedule}
+              reservedSlots={(reservedSlots ?? []) as ReservedSlot[]}
+            />
+          </section>
         </div>
-      </section>
+      </div>
     </main>
   )
 }
