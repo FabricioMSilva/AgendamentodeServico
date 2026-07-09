@@ -1,12 +1,7 @@
-import EntryQuiz from '@/components/customer/EntryQuiz'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
-
-type InitialIdentity = {
-  name: string | null
-  email: string | null
-}
 
 export default async function Home() {
   const hasSupabaseConfig =
@@ -22,9 +17,6 @@ export default async function Home() {
             <p className="mt-4 max-w-xl text-base leading-7 text-white/70">
               O aplicativo está funcionando, mas não foi possível conectar ao Supabase.
             </p>
-            <p className="mt-4 text-sm text-white/50">
-              Se você estiver usando este site sem ambiente configurado, algumas funcionalidades podem ficar indisponíveis.
-            </p>
           </div>
         </div>
       </main>
@@ -36,15 +28,20 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const initialIdentity: InitialIdentity | null = user
-    ? {
-        name:
-          (user.user_metadata?.full_name as string | undefined) ??
-          (user.user_metadata?.name as string | undefined) ??
-          (user.email ? user.email.split('@')[0] : null),
-        email: user.email ?? null,
-      }
-    : null
+  if (!user) {
+    redirect('/buscar')
+  }
 
-  return <EntryQuiz initialIdentity={initialIdentity} />
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (profile?.role === 'admin') {
+    redirect('/admin/dashboard')
+  }
+
+  redirect('/buscar')
 }
+

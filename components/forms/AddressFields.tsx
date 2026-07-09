@@ -15,6 +15,8 @@ type Props = {
   description?: string
   required?: boolean
   tone?: 'light' | 'dark'
+  mode?: 'full' | 'compact'
+  showComplement?: boolean
   initialValues?: {
     zip_code?: string | null
     street?: string | null
@@ -31,6 +33,8 @@ export default function AddressFields({
   description = 'CEP para preencher automaticamente rua, bairro, cidade e estado.',
   required = false,
   tone = 'light',
+  mode = 'full',
+  showComplement = true,
   initialValues,
 }: Props) {
   const [zipCode, setZipCode] = useState(initialValues?.zip_code ?? '')
@@ -42,6 +46,7 @@ export default function AddressFields({
   const [state, setState] = useState(initialValues?.state ?? '')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [manualEdit, setManualEdit] = useState(mode === 'full')
 
   const filled = useMemo(
     () => Boolean(street || neighborhood || city || state),
@@ -70,6 +75,9 @@ export default function AddressFields({
       setCity(result.city)
       setState(result.state)
       setMessage('Endereço encontrado e preenchido.')
+      if (mode === 'compact') {
+        setManualEdit(false)
+      }
     } catch {
       setMessage('Não consegui buscar o CEP agora.')
     } finally {
@@ -95,6 +103,12 @@ export default function AddressFields({
     : 'mb-1 block text-xs font-medium text-[#4a433d]'
   const helperClass = isDark ? 'text-xs text-white/55' : 'text-xs text-[#75685f]'
   const messageClass = isDark ? 'text-xs text-[#FF66B2]' : 'text-xs text-[#8b5f49]'
+  const summaryClass = isDark
+    ? 'rounded-[8px] border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/72'
+    : 'rounded-[8px] border border-[#eadfd5] bg-[#faf7f4] px-3 py-2 text-sm text-[#3d342d]'
+
+  const showFullFields = mode === 'full' || manualEdit
+  const summaryText = [street, neighborhood, city, state].filter(Boolean).join(' - ')
 
   return (
     <fieldset className={fieldsetClass}>
@@ -132,91 +146,147 @@ export default function AddressFields({
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <label className="block md:col-span-2">
-          <span className={labelClass}>
-            Rua{required ? <span className="ml-0.5 text-red-500">*</span> : null}
-          </span>
-          <input
-            name="street"
-            value={street}
-            onChange={(event) => setStreet(event.target.value)}
-            placeholder="Rua, avenida, travessa"
-            className={inputClass}
-            required={required}
-          />
-        </label>
+      {mode === 'compact' && !showFullFields ? (
+        <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+            <label className="block">
+              <span className={labelClass}>Número</span>
+              <input
+                name="number"
+                value={number}
+                onChange={(event) => setNumber(event.target.value)}
+                placeholder="123"
+                className={inputClass}
+              />
+            </label>
 
-        <label className="block">
-          <span className={labelClass}>Número</span>
-          <input
-            name="number"
-            value={number}
-            onChange={(event) => setNumber(event.target.value)}
-            placeholder="123"
-            className={inputClass}
-          />
-        </label>
+            {showComplement ? (
+              <label className="block">
+                <span className={labelClass}>Complemento</span>
+                <input
+                  name="complement"
+                  value={complement}
+                  onChange={(event) => setComplement(event.target.value)}
+                  placeholder="Opcional"
+                  className={inputClass}
+                />
+              </label>
+            ) : null}
+          </div>
 
-        <label className="block">
-          <span className={labelClass}>Complemento</span>
-          <input
-            name="complement"
-            value={complement}
-            onChange={(event) => setComplement(event.target.value)}
-            placeholder="Apto, sala, bloco"
-            className={inputClass}
-          />
-        </label>
-
-        <label className="block">
-          <span className={labelClass}>
-            Bairro{required ? <span className="ml-0.5 text-red-500">*</span> : null}
-          </span>
-          <input
-            name="neighborhood"
-            value={neighborhood}
-            onChange={(event) => setNeighborhood(event.target.value)}
-            placeholder="Centro"
-            className={inputClass}
-            required={required}
-          />
-        </label>
-
-        <label className="block">
-          <span className={labelClass}>
-            Cidade{required ? <span className="ml-0.5 text-red-500">*</span> : null}
-          </span>
-          <input
-            name="city"
-            value={city}
-            onChange={(event) => setCity(event.target.value)}
-            placeholder="São Paulo"
-            className={inputClass}
-            required={required}
-          />
-        </label>
-
-        <label className="block md:col-span-2">
-          <span className={labelClass}>
-            Estado{required ? <span className="ml-0.5 text-red-500">*</span> : null}
-          </span>
-          <select
-            name="state"
-            value={state}
-            onChange={(event) => setState(event.target.value)}
-            className={inputClass}
-            required={required}
+          <button
+            type="button"
+            onClick={() => setManualEdit(true)}
+            className="inline-flex text-sm font-semibold text-[#8FF0F4] transition hover:text-white"
           >
-            <option value="">Selecione</option>
-            {STATE_OPTIONS.map((uf) => (
-              <option key={uf} value={uf}>
-                {uf}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+            Preencher endereço completo
+          </button>
+
+          <div className={summaryClass}>
+            {summaryText || 'Vamos completar o restante depois do CEP.'}
+          </div>
+        </div>
+      ) : null}
+
+      {showFullFields ? (
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="block md:col-span-2">
+            <span className={labelClass}>
+              Rua{required ? <span className="ml-0.5 text-red-500">*</span> : null}
+            </span>
+            <input
+              name="street"
+              value={street}
+              onChange={(event) => setStreet(event.target.value)}
+              placeholder="Rua, avenida, travessa"
+              className={inputClass}
+              required={required}
+            />
+          </label>
+
+          <label className="block">
+            <span className={labelClass}>Número</span>
+            <input
+              name="number"
+              value={number}
+              onChange={(event) => setNumber(event.target.value)}
+              placeholder="123"
+              className={inputClass}
+            />
+          </label>
+
+          {showComplement ? (
+            <label className="block">
+              <span className={labelClass}>Complemento</span>
+              <input
+                name="complement"
+                value={complement}
+                onChange={(event) => setComplement(event.target.value)}
+                placeholder="Apto, sala, bloco"
+                className={inputClass}
+              />
+            </label>
+          ) : null}
+
+          <label className="block">
+            <span className={labelClass}>
+              Bairro{required ? <span className="ml-0.5 text-red-500">*</span> : null}
+            </span>
+            <input
+              name="neighborhood"
+              value={neighborhood}
+              onChange={(event) => setNeighborhood(event.target.value)}
+              placeholder="Centro"
+              className={inputClass}
+              required={required}
+            />
+          </label>
+
+          <label className="block">
+            <span className={labelClass}>
+              Cidade{required ? <span className="ml-0.5 text-red-500">*</span> : null}
+            </span>
+            <input
+              name="city"
+              value={city}
+              onChange={(event) => setCity(event.target.value)}
+              placeholder="São Paulo"
+              className={inputClass}
+              required={required}
+            />
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className={labelClass}>
+              Estado{required ? <span className="ml-0.5 text-red-500">*</span> : null}
+            </span>
+            <select
+              name="state"
+              value={state}
+              onChange={(event) => setState(event.target.value)}
+              className={inputClass}
+              required={required}
+            >
+              <option value="">Selecione</option>
+              {STATE_OPTIONS.map((uf) => (
+                <option key={uf} value={uf}>
+                  {uf}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {mode === 'compact' ? (
+            <button
+              type="button"
+              onClick={() => setManualEdit(false)}
+              className="inline-flex text-sm font-semibold text-[#8FF0F4] transition hover:text-white"
+            >
+              Voltar para o modo simples
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="flex items-center justify-between gap-3">
         <p className={helperClass}>

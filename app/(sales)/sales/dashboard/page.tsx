@@ -6,7 +6,7 @@ export default async function SalesDashboard() {
   const db = createAdminClient()
   const { data: establishments } = await db
     .from('establishments')
-    .select('id, name, slug, owner_email, is_blocked, admin_id, profiles(name, email)')
+    .select('id, name, slug, owner_email, is_blocked, admin_id, profiles(name, phone)')
     .order('created_at', { ascending: false })
 
   return (

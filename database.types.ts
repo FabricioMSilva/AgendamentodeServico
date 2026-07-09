@@ -581,6 +581,36 @@ export interface Database {
         }
         Relationships: []
       }
+      login_codes: {
+        Row: {
+          id: string
+          phone: string
+          code_hash: string
+          attempts: number
+          expires_at: string
+          consumed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          phone: string
+          code_hash: string
+          attempts?: number
+          expires_at: string
+          consumed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          phone?: string
+          code_hash?: string
+          attempts?: number
+          expires_at?: string
+          consumed_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           id: string
