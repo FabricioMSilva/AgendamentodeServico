@@ -207,7 +207,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/48">
-                Painel do dono
+                Painel do comerciante
               </p>
               <h1 className="mt-2 text-3xl font-bold leading-tight text-white sm:text-4xl">
                 {establishment.name}
@@ -218,6 +218,9 @@ export default async function AdminDashboard({ searchParams }: Props) {
                 </span>
                 <span className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10">
                   {establishment.is_blocked ? 'Agenda pausada' : 'Agenda ativa'}
+                </span>
+                <span className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10">
+                  Aprovações e horários ficam aqui
                 </span>
               </div>
             </div>
@@ -237,6 +240,37 @@ export default async function AdminDashboard({ searchParams }: Props) {
             </div>
           </div>
         </header>
+
+        <section className="grid gap-3 md:grid-cols-3">
+          <Card title="Atalhos rápidos" className="bg-white/5">
+            <div className="space-y-2 text-sm text-white/72">
+              <p>Gerencie agenda, aprovações, fotos e horários sem sair do painel.</p>
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Link href="/admin/dashboard?tab=agenda" className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10 transition hover:bg-white/12">
+                  Agenda
+                </Link>
+                <Link href="/admin/dashboard?tab=funcionamento" className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10 transition hover:bg-white/12">
+                  Horários
+                </Link>
+                <Link href="/admin/dashboard?tab=midia" className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10 transition hover:bg-white/12">
+                  Fotos
+                </Link>
+              </div>
+            </div>
+          </Card>
+          <Card title="Quem aprova" className="bg-white/5">
+            <div className="space-y-2 text-sm text-white/72">
+              <p>O comerciante aprova ou recusa agendamentos.</p>
+              <p>O painel VIP do site vê todo o conjunto de negócios, clientes e status.</p>
+            </div>
+          </Card>
+          <Card title="Acesso" className="bg-white/5">
+            <div className="space-y-2 text-sm text-white/72">
+              <p>Use este painel depois que o seu acesso for liberado por convite.</p>
+              <p>Se precisar sair, o botão de logout fica no topo.</p>
+            </div>
+          </Card>
+        </section>
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="Pendentes" value={String(pending.length)} detail="aguardando aprovação" />

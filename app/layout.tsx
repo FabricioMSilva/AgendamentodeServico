@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fredoka, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import PwaCleanup from "@/components/PwaCleanup";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-body",
@@ -29,7 +30,10 @@ export default function RootLayout({
     <html
       lang="pt-BR"      data-scroll-behavior="smooth"      className={`${plusJakarta.variable} ${fredoka.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <PwaCleanup />
+        {children}
+      </body>
     </html>
   );
 }

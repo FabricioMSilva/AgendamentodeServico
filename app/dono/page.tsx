@@ -56,7 +56,7 @@ export default async function OwnerEntryPage() {
               href="/admin/dashboard"
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-white/8 px-5 text-sm font-semibold text-white transition hover:bg-white/12"
             >
-              Ir para o painel VIP
+              Ir para o painel do comerciante
             </Link>
           </div>
 
@@ -72,4 +72,3 @@ export default async function OwnerEntryPage() {
     </main>
   )
 }
-

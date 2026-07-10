@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { isSuperAdmin } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,9 +35,13 @@ export default async function Home() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, phone')
     .eq('id', user.id)
     .maybeSingle()
+
+  if (isSuperAdmin({ email: user.email, phone: profile?.phone })) {
+    redirect('/sales/dashboard')
+  }
 
   if (profile?.role === 'admin') {
     redirect('/admin/dashboard')
@@ -44,4 +49,3 @@ export default async function Home() {
 
   redirect('/buscar')
 }
-
