@@ -17,6 +17,7 @@ const DAYS = [
   ['6', 'Sábado'],
 ] as const
 
+
 const inputClass =
   'rounded-[8px] border border-white/10 bg-[#11172B] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25'
 
