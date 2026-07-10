@@ -339,7 +339,7 @@ export default function CredentialsAuthForm({ initialMode = 'login', returnTo = 
                 : phoneCheck === 'valid'
                   ? 'Esse número parece estar no WhatsApp.'
                   : phoneCheck === 'invalid'
-                    ? 'Não encontrei esse número no WhatsApp. Você ainda pode continuar com SMS.'
+                    ? 'Não encontrei esse número no WhatsApp. Você ainda pode continuar.'
                     : phoneCheck === 'unavailable'
                       ? 'Não consegui validar agora, mas você pode continuar.'
                       : null

@@ -10,11 +10,25 @@ function normalizePhone(input: string) {
 }
 
 function hasWhatsappConfig() {
-  return Boolean(
-    process.env.EVOLUTION_API_URL?.trim() &&
-      process.env.EVOLUTION_API_KEY?.trim() &&
-      process.env.EVOLUTION_INSTANCE?.trim(),
-  )
+  const provider = process.env.WHATSAPP_PROVIDER?.trim().toLowerCase() || 'twilio'
+
+  if (provider === 'twilio') {
+    return Boolean(
+      process.env.TWILIO_ACCOUNT_SID?.trim() &&
+        process.env.TWILIO_AUTH_TOKEN?.trim() &&
+        process.env.TWILIO_WHATSAPP_FROM?.trim(),
+    )
+  }
+
+  if (provider === 'evolution') {
+    return Boolean(
+      process.env.EVOLUTION_API_URL?.trim() &&
+        process.env.EVOLUTION_API_KEY?.trim() &&
+        process.env.EVOLUTION_INSTANCE?.trim(),
+    )
+  }
+
+  return false
 }
 
 export async function POST(request: Request) {

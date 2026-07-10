@@ -94,7 +94,7 @@ async function queueReminders() {
       recipient_role: 'customer',
       template_key: 'appointment_reminder',
       message_body: message,
-      provider: process.env.WHATSAPP_PROVIDER?.trim() || 'evolution',
+      provider: process.env.WHATSAPP_PROVIDER?.trim() || 'twilio',
       status: 'queued',
       scheduled_for: now.toISOString(),
     })

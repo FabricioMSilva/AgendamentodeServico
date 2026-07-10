@@ -33,12 +33,12 @@ const required = [
   'CRON_SECRET',
   'WHATSAPP_WEBHOOK_SECRET',
   'WHATSAPP_PROVIDER',
-  'EVOLUTION_API_URL',
-  'EVOLUTION_API_KEY',
-  'EVOLUTION_INSTANCE',
+  'TWILIO_ACCOUNT_SID',
+  'TWILIO_AUTH_TOKEN',
+  'TWILIO_WHATSAPP_FROM',
 ]
 
-const optional = ['CORREIOS_API_TOKEN']
+const optional = ['CORREIOS_API_TOKEN', 'SMS_PROVIDER', 'TWILIO_FROM_PHONE']
 
 // Valores de exemplo sao tratados como invalidos para evitar que a automacao local
 // rode com credenciais que parecem preenchidas, mas falham em tempo de execucao.

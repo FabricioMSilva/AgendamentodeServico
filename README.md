@@ -8,7 +8,7 @@ Aplicacao Next.js para cadastro, busca e agendamento em estabelecimentos de bele
 - TypeScript
 - Tailwind CSS 4
 - Supabase SSR e Supabase JS
-- Evolution API como provedor de WhatsApp
+- Twilio WhatsApp API como provedor de WhatsApp
 - PWA via `next-pwa`
 
 ## Primeiros Passos
@@ -47,18 +47,20 @@ Opcionais ou dependentes de recurso:
 CORREIOS_API_TOKEN=
 CRON_SECRET=
 WHATSAPP_WEBHOOK_SECRET=
-WHATSAPP_PROVIDER=evolution
-EVOLUTION_API_URL=
-EVOLUTION_API_KEY=
-EVOLUTION_INSTANCE=
+WHATSAPP_PROVIDER=twilio
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_WHATSAPP_FROM=
+SMS_PROVIDER=twilio
+TWILIO_FROM_PHONE=
 ```
 
 Notas:
 
-- `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `CRON_SECRET`, `WHATSAPP_WEBHOOK_SECRET` e chaves da Evolution API nunca devem receber prefixo `NEXT_PUBLIC_`.
+- `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `CRON_SECRET`, `WHATSAPP_WEBHOOK_SECRET` e chaves da Twilio nunca devem receber prefixo `NEXT_PUBLIC_`.
 - Se `CORREIOS_API_TOKEN` faltar, a rota de CEP tenta fallback via ViaCEP.
 - Sem `CRON_SECRET`, as rotas de automacao de WhatsApp retornam `401`.
-- Sem as variaveis `EVOLUTION_*`, mensagens de WhatsApp nao sao enviadas.
+- Sem as variaveis `TWILIO_*`, mensagens de WhatsApp nao sao enviadas.
 
 ## Supabase
 
@@ -103,21 +105,23 @@ Webhook protegido por `WHATSAPP_WEBHOOK_SECRET` ou fallback para `CRON_SECRET`:
 
 As chamadas aceitam `Authorization: Bearer <secret>` ou os headers internos correspondentes (`x-cron-secret` e `x-webhook-secret`).
 
-## Evolution API Local
+## WhatsApp com Twilio
 
-O projeto inclui um compose local para subir Evolution API, Postgres e Redis. Em algumas versoes do Docker Desktop no Windows, use `DOCKER_API_VERSION=1.51` na sessao antes dos comandos Docker.
+O projeto envia WhatsApp via Twilio. Para testes, use o Sandbox do WhatsApp da Twilio; para producao, conecte um numero aprovado.
 
-```bash
-docker compose -f docker-compose.evolution.yml up -d
-```
+O envio usa estas variaveis:
 
-A chave local fica em `.env.evolution` e deve ser a mesma de `EVOLUTION_API_KEY` no `.env.local`. A instancia configurada para desenvolvimento e `ibeleza-local`; depois de subir a Evolution, crie/conecte essa instancia no painel/API antes de testar envios. O manager fica em `http://localhost:8080/manager`.
+- `WHATSAPP_PROVIDER=twilio`
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_WHATSAPP_FROM`
 
-Para parar:
+Para recuperar senha por SMS, preencha tambem:
 
-```bash
-docker compose -f docker-compose.evolution.yml down
-```
+- `SMS_PROVIDER=twilio`
+- `TWILIO_FROM_PHONE`
+
+Consulte o painel da Twilio para copiar o numero do sandbox ou o sender aprovado e usar no formato `whatsapp:+...`.
 
 ## Observacoes de Seguranca
 
