@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import CreateEstablishmentForm from '@/components/sales/CreateEstablishmentForm'
 import { setEstablishmentBlocked } from '@/actions/consultant'
+import LogoutButton from '@/components/auth/LogoutButton'
 
 export default async function SalesDashboard() {
   const db = createAdminClient()
@@ -12,9 +13,12 @@ export default async function SalesDashboard() {
   return (
     <main className="min-h-screen bg-[#1A2033] px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl space-y-8">
-      <header>
-        <h1 className="text-2xl font-bold text-white">Cadastro de Negócios</h1>
-        <p className="mt-1 text-sm text-white/60">Gerencie salões, clínicas e espaços de saúde e beleza</p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Cadastro de Negócios</h1>
+          <p className="mt-1 text-sm text-white/60">Gerencie salões, clínicas e espaços de saúde e beleza</p>
+        </div>
+        <LogoutButton redirectTo="/login" />
       </header>
 
       <section>

@@ -11,6 +11,7 @@ import MediaManager from '@/components/admin/MediaManager'
 import ProfileSettingsForm from '@/components/admin/ProfileSettingsForm'
 import ServiceCatalogPicker from '@/components/admin/ServiceCatalogPicker'
 import AppointmentHistoryDashboard from '@/components/admin/AppointmentHistoryDashboard'
+import LogoutButton from '@/components/auth/LogoutButton'
 import Card from '@/components/ui/Card'
 import type { AppointmentEvent, AppointmentStatus, Establishment, EstablishmentMedia, Service, ServiceCatalogItem, ServiceSuggestion } from '@/database.types'
 
@@ -232,6 +233,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
               >
                 Ver página pública
               </Link>
+              <LogoutButton redirectTo="/login" />
             </div>
           </div>
         </header>
