@@ -56,6 +56,7 @@ function extractTwilioError(payload: unknown, fallback: string) {
   if (!payload || typeof payload !== 'object') return fallback
 
   const record = payload as Record<string, unknown>
+  const code = record.code
   const message = record.message
   if (typeof message === 'string' && message.trim()) return message
 
@@ -65,7 +66,37 @@ function extractTwilioError(payload: unknown, fallback: string) {
   const moreInfo = record.more_info
   if (typeof moreInfo === 'string' && moreInfo.trim()) return moreInfo
 
+  if (code === 63007 || code === '63007') {
+    return 'O Twilio WhatsApp Sandbox não reconheceu o From. Confirme se o sandbox foi ativado nesta mesma conta e tente enviar novamente o join code.'
+  }
+
   return fallback
+}
+
+function describeFetchError(error: unknown, fallback: string) {
+  if (!error || typeof error !== 'object') return fallback
+
+  const record = error as {
+    message?: unknown
+    cause?: { code?: unknown; message?: unknown } | unknown
+  }
+
+  const message = typeof record.message === 'string' ? record.message : ''
+  const cause = record.cause
+
+  if (cause && typeof cause === 'object') {
+    const causeRecord = cause as { code?: unknown; message?: unknown }
+    const code = typeof causeRecord.code === 'string' ? causeRecord.code : ''
+    const causeMessage = typeof causeRecord.message === 'string' ? causeRecord.message : ''
+
+    if (code || causeMessage) {
+      return [message || fallback, code ? `(${code})` : null, causeMessage || null]
+        .filter(Boolean)
+        .join(' ')
+    }
+  }
+
+  return message || fallback
 }
 
 function extractCheckedNumbers(payload: unknown): Array<{ number: string; exists: boolean }> {
@@ -179,22 +210,31 @@ async function sendWithTwilio({ to, message }: SendTextInput): Promise<SendTextR
     }
   }
 
-  const response = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${credentials.accountSid}/Messages.json`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: getTwilioAuthHeader(credentials.accountSid, credentials.authToken),
-        'Content-Type': 'application/x-www-form-urlencoded',
+  let response: Response
+  try {
+    response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${credentials.accountSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: getTwilioAuthHeader(credentials.accountSid, credentials.authToken),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          To: toAddress,
+          From: credentials.from,
+          Body: message,
+        }),
+        cache: 'no-store',
       },
-      body: new URLSearchParams({
-        To: toAddress,
-        From: credentials.from,
-        Body: message,
-      }),
-      cache: 'no-store',
-    },
-  )
+    )
+  } catch (error) {
+    return {
+      ok: false,
+      provider: 'twilio',
+      error: describeFetchError(error, 'Falha ao conectar com a Twilio.'),
+    }
+  }
 
   const payload = (await response.json().catch(() => null)) as unknown
   if (!response.ok) {
