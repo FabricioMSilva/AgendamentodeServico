@@ -114,7 +114,14 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ message: RESPONSE_MESSAGE })
-  } catch {
-    return NextResponse.json({ error: 'Não foi possível enviar o código de login.' }, { status: 500 })
+  } catch (error) {
+    console.error('login/request-code failed', error)
+
+    const detail =
+      error instanceof Error && error.message.trim()
+        ? error.message
+        : 'Não foi possível enviar o código de login.'
+
+    return NextResponse.json({ error: detail }, { status: 500 })
   }
 }
