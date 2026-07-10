@@ -19,7 +19,10 @@ function normalizeApiUrl(url: string) {
   return url.replace(/\/+$/, '')
 }
 
-function normalizeTwilioWhatsAppAddress(value: string) {
+function normalizeTwilioWhatsAppAddress(
+  value: string,
+  options?: { defaultCountryCode?: string },
+) {
   const trimmed = value.trim()
   if (!trimmed) return ''
 
@@ -27,7 +30,12 @@ function normalizeTwilioWhatsAppAddress(value: string) {
   const digits = raw.replace(/\D/g, '')
   if (!digits) return ''
 
-  return `whatsapp:+${digits.startsWith('55') ? digits : `55${digits}`}`
+  const defaultCountryCode = options?.defaultCountryCode?.replace(/\D/g, '') ?? ''
+  if (defaultCountryCode && !digits.startsWith(defaultCountryCode)) {
+    return `whatsapp:+${defaultCountryCode}${digits}`
+  }
+
+  return `whatsapp:+${digits}`
 }
 
 function getWhatsappProvider() {
@@ -201,7 +209,7 @@ async function sendWithTwilio({ to, message }: SendTextInput): Promise<SendTextR
     }
   }
 
-  const toAddress = normalizeTwilioWhatsAppAddress(to)
+  const toAddress = normalizeTwilioWhatsAppAddress(to, { defaultCountryCode: '55' })
   if (!toAddress || !credentials.from) {
     return {
       ok: false,
