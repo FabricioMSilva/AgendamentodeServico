@@ -323,15 +323,38 @@ export default async function AdminDashboard({ searchParams }: Props) {
           </Card>
         </section>
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <DashboardStatCard title="Pendentes" value={pending.length} detail="aguardando aprovação" className="bg-white/5" />
-          <DashboardStatCard title="Hoje" value={appointmentsToday.length} detail="horários futuros" className="bg-white/5" />
-          <DashboardStatCard title="Serviços ativos" value={activeServices.length} detail={`${services.length} cadastrados`} className="bg-white/5" />
-          <DashboardStatCard
-            title="Próximo horário"
-            value={formatNextAppointment(nextAppointment)}
-            detail={nextAppointment?.customer_name ?? 'sem cliente na fila'}
+        <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <DashboardStatCard 
+            title="Pendentes" 
+            value={pending.length} 
+            detail="aguardando aprovação" 
             className="bg-white/5"
+            compact
+            icon={<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          />
+          <DashboardStatCard 
+            title="Hoje" 
+            value={appointmentsToday.length} 
+            detail="horários futuros" 
+            className="bg-white/5"
+            compact
+            icon={<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+          />
+          <DashboardStatCard 
+            title="Serviços" 
+            value={activeServices.length} 
+            detail={`${services.length} total`} 
+            className="bg-white/5"
+            compact
+            icon={<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>}
+          />
+          <DashboardStatCard
+            title="Próximo" 
+            value={formatNextAppointment(nextAppointment)}
+            detail={nextAppointment?.customer_name ?? 'sem cliente'}
+            className="bg-white/5"
+            compact
+            icon={<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>}
           />
         </section>
 

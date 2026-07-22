@@ -104,65 +104,85 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
             IBeleza
           </Link>
 
-          {userLabel ? (
+          {loggedIn && userLabel ? (
             <span className="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 sm:inline-block">
               {userLabel}
             </span>
           ) : null}
 
-          {/* Desktop menu */}
-          <div className="hidden flex-wrap items-center justify-end gap-2 sm:flex sm:gap-3">
-            {menuItems.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition duration-150 ${
-                    isActive ? 'bg-slate-950 text-white' : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-
-            {loggedIn ? (
-              <LogoutButton className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" />
-            ) : null}
-          </div>
-
-          {/* Mobile menu button - only show if logged in */}
+          {/* Desktop menu - for authenticated users */}
           {loggedIn ? (
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
-              aria-expanded={mobileMenuOpen}
-              className="inline-flex sm:hidden h-10 w-10 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 transition"
-            >
-              {mobileMenuOpen ? <CloseIcon /> : <HamburgerIcon />}
-            </button>
-          ) : null}
+            <div className="hidden flex-wrap items-center justify-end gap-2 sm:flex sm:gap-3">
+              {menuItems.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition duration-150 ${
+                      isActive ? 'bg-slate-950 text-white' : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
+
+              <LogoutButton className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" />
+            </div>
+          ) : (
+            /* Desktop menu for anonymous users - styled for better visibility */
+            <div className="hidden sm:flex sm:gap-2">
+              {menuItems.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition duration-150 ${
+                      isActive 
+                        ? 'bg-slate-950 text-white' 
+                        : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Mobile menu button - for both logged in and anonymous */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={mobileMenuOpen}
+            className="inline-flex sm:hidden h-10 w-10 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 transition"
+          >
+            {mobileMenuOpen ? <CloseIcon /> : <HamburgerIcon />}
+          </button>
         </div>
       </header>
 
       {/* Mobile menu overlay */}
-      {loggedIn && mobileMenuOpen && (
+      {mobileMenuOpen && (
         <div className="fixed inset-0 z-30 bg-slate-950/50 sm:hidden" onClick={() => setMobileMenuOpen(false)} />
       )}
 
       {/* Mobile menu drawer */}
-      {loggedIn && mobileMenuOpen && (
+      {mobileMenuOpen && (
         <div
           ref={menuRef}
           className="fixed right-0 top-16 z-40 h-[calc(100vh-4rem)] w-full max-w-sm bg-white/98 backdrop-blur backdrop-saturate-150 flex flex-col sm:hidden"
         >
-          {/* User info */}
-          <div className="border-b border-slate-200/70 px-4 py-4">
-            <p className="truncate text-sm font-semibold text-slate-900">{userName}</p>
-            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">{userLabel}</p>
-          </div>
+          {/* User info - only for logged in users */}
+          {loggedIn && (
+            <div className="border-b border-slate-200/70 px-4 py-4">
+              <p className="truncate text-sm font-semibold text-slate-900">{userName}</p>
+              <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">{userLabel}</p>
+            </div>
+          )}
 
           {/* Scrollable menu items */}
           <nav className="flex-1 overflow-y-auto">
@@ -186,10 +206,12 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
             </div>
           </nav>
 
-          {/* Logout button */}
-          <div className="border-t border-slate-200/70 p-4">
-            <LogoutButton className="w-full rounded-lg bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition" />
-          </div>
+          {/* Logout button - only for logged in users */}
+          {loggedIn && (
+            <div className="border-t border-slate-200/70 p-4">
+              <LogoutButton className="w-full rounded-lg bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition" />
+            </div>
+          )}
         </div>
       )}
     </>
