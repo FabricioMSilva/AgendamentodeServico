@@ -21,8 +21,17 @@ export type AppointmentStatus =
   | 'cancelled'
   | 'no_show'
 
-export type UserRole = 'admin' | 'customer'
+export type UserRole = 'merchant' | 'customer' | 'super_admin'
+export type NivelAcessoUsuario = 'cliente' | 'profissional' | 'administrador'
 export type PriceType = 'fixed' | 'variable'
+export type TipoPreco = 'fixo' | 'variavel'
+export type StatusAgendamentoPortugues =
+  | 'pendente'
+  | 'confirmado'
+  | 'em_atendimento'
+  | 'concluido'
+  | 'cancelado'
+  | 'nao_compareceu'
 
 export interface Database {
   public: {
@@ -93,6 +102,520 @@ export interface Database {
             foreignKeyName: 'profiles_id_fkey'
             columns: ['id']
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      usuarios: {
+        Row: {
+          id: string
+          nivel_acesso: NivelAcessoUsuario
+          nome: string | null
+          telefone: string | null
+          email: string | null
+          avatar_url: string | null
+          cep: string | null
+          rua: string | null
+          numero: string | null
+          complemento: string | null
+          bairro: string | null
+          cidade: string | null
+          estado: string | null
+          latitude: number | null
+          longitude: number | null
+          tipo_cadastro: 'usuario' | 'comerciante'
+          cpf: string | null
+          cnpj: string | null
+          comerciante_status: 'nao_solicitado' | 'pendente' | 'aprovado' | 'reprovado'
+          comerciante_ativo: boolean
+          comerciante_aprovado_em: string | null
+          comerciante_aprovado_por: string | null
+          senha_definida: boolean
+          conta_bloqueada: boolean
+          bloqueado_em: string | null
+          bloqueado_por: string | null
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id: string
+          nivel_acesso?: NivelAcessoUsuario
+          nome?: string | null
+          telefone?: string | null
+          email?: string | null
+          avatar_url?: string | null
+          cep?: string | null
+          rua?: string | null
+          numero?: string | null
+          complemento?: string | null
+          bairro?: string | null
+          cidade?: string | null
+          estado?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          tipo_cadastro?: 'usuario' | 'comerciante'
+          cpf?: string | null
+          cnpj?: string | null
+          comerciante_status?: 'nao_solicitado' | 'pendente' | 'aprovado' | 'reprovado'
+          comerciante_ativo?: boolean
+          comerciante_aprovado_em?: string | null
+          comerciante_aprovado_por?: string | null
+          senha_definida?: boolean
+          conta_bloqueada?: boolean
+          bloqueado_em?: string | null
+          bloqueado_por?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          nivel_acesso?: NivelAcessoUsuario
+          nome?: string | null
+          telefone?: string | null
+          email?: string | null
+          avatar_url?: string | null
+          cep?: string | null
+          rua?: string | null
+          numero?: string | null
+          complemento?: string | null
+          bairro?: string | null
+          cidade?: string | null
+          estado?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          tipo_cadastro?: 'usuario' | 'comerciante'
+          cpf?: string | null
+          cnpj?: string | null
+          comerciante_status?: 'nao_solicitado' | 'pendente' | 'aprovado' | 'reprovado'
+          comerciante_ativo?: boolean
+          comerciante_aprovado_em?: string | null
+          comerciante_aprovado_por?: string | null
+          senha_definida?: boolean
+          conta_bloqueada?: boolean
+          bloqueado_em?: string | null
+          bloqueado_por?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'usuarios_id_fkey'
+            columns: ['id']
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      codigos_login: {
+        Row: {
+          id: string
+          telefone: string
+          codigo_hash: string
+          tentativas: number
+          expira_em: string
+          consumido_em: string | null
+          criado_em: string
+        }
+        Insert: {
+          id?: string
+          telefone: string
+          codigo_hash: string
+          tentativas?: number
+          expira_em: string
+          consumido_em?: string | null
+          criado_em?: string
+        }
+        Update: {
+          id?: string
+          telefone?: string
+          codigo_hash?: string
+          tentativas?: number
+          expira_em?: string
+          consumido_em?: string | null
+          criado_em?: string
+        }
+        Relationships: []
+      }
+      administradores_globais: {
+        Row: {
+          id: string
+          email: string | null
+          telefone: string | null
+          criado_em: string
+        }
+        Insert: {
+          id?: string
+          email?: string | null
+          telefone?: string | null
+          criado_em?: string
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          telefone?: string | null
+          criado_em?: string
+        }
+        Relationships: []
+      }
+      estabelecimentos: {
+        Row: {
+          id: string
+          usuario_admin_id: string | null
+          slug: string
+          nome: string
+          descricao: string | null
+          tipo_negocio: string
+          telefone: string | null
+          whatsapp: string | null
+          email: string | null
+          instagram_url: string | null
+          facebook_url: string | null
+          youtube_url: string | null
+          tiktok_url: string | null
+          cep: string | null
+          rua: string | null
+          numero: string | null
+          complemento: string | null
+          bairro: string | null
+          cidade: string | null
+          estado: string | null
+          endereco: string | null
+          latitude: number | null
+          longitude: number | null
+          logo_url: string | null
+          horarios_funcionamento: Json
+          vagas_por_horario: number
+          bloqueado: boolean
+          status_aprovacao: 'pendente' | 'aprovado' | 'reprovado'
+          aprovado_em: string | null
+          aprovado_por: string | null
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id?: string
+          usuario_admin_id?: string | null
+          slug: string
+          nome: string
+          descricao?: string | null
+          tipo_negocio?: string
+          telefone?: string | null
+          whatsapp?: string | null
+          email?: string | null
+          instagram_url?: string | null
+          facebook_url?: string | null
+          youtube_url?: string | null
+          tiktok_url?: string | null
+          cep?: string | null
+          rua?: string | null
+          numero?: string | null
+          complemento?: string | null
+          bairro?: string | null
+          cidade?: string | null
+          estado?: string | null
+          endereco?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          logo_url?: string | null
+          horarios_funcionamento?: Json
+          vagas_por_horario?: number
+          bloqueado?: boolean
+          status_aprovacao?: 'pendente' | 'aprovado' | 'reprovado'
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          usuario_admin_id?: string | null
+          slug?: string
+          nome?: string
+          descricao?: string | null
+          tipo_negocio?: string
+          telefone?: string | null
+          whatsapp?: string | null
+          email?: string | null
+          instagram_url?: string | null
+          facebook_url?: string | null
+          youtube_url?: string | null
+          tiktok_url?: string | null
+          cep?: string | null
+          rua?: string | null
+          numero?: string | null
+          complemento?: string | null
+          bairro?: string | null
+          cidade?: string | null
+          estado?: string | null
+          endereco?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          logo_url?: string | null
+          horarios_funcionamento?: Json
+          vagas_por_horario?: number
+          bloqueado?: boolean
+          status_aprovacao?: 'pendente' | 'aprovado' | 'reprovado'
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'estabelecimentos_usuario_admin_id_fkey'
+            columns: ['usuario_admin_id']
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      servicos: {
+        Row: {
+          id: string
+          estabelecimento_id: string
+          nome: string
+          categoria: string
+          descricao: string | null
+          tipo_preco: TipoPreco
+          preco: number | null
+          duracao_minutos: number
+          imagem_url: string | null
+          ativo: boolean
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id?: string
+          estabelecimento_id: string
+          nome: string
+          categoria?: string
+          descricao?: string | null
+          tipo_preco?: TipoPreco
+          preco?: number | null
+          duracao_minutos?: number
+          imagem_url?: string | null
+          ativo?: boolean
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          estabelecimento_id?: string
+          nome?: string
+          categoria?: string
+          descricao?: string | null
+          tipo_preco?: TipoPreco
+          preco?: number | null
+          duracao_minutos?: number
+          imagem_url?: string | null
+          ativo?: boolean
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'servicos_estabelecimento_id_fkey'
+            columns: ['estabelecimento_id']
+            referencedRelation: 'estabelecimentos'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      midias_estabelecimento: {
+        Row: {
+          id: string
+          estabelecimento_id: string
+          url: string
+          tipo: string
+          titulo: string | null
+          ordem: number
+          criado_em: string
+        }
+        Insert: {
+          id?: string
+          estabelecimento_id: string
+          url: string
+          tipo?: string
+          titulo?: string | null
+          ordem?: number
+          criado_em?: string
+        }
+        Update: {
+          id?: string
+          estabelecimento_id?: string
+          url?: string
+          tipo?: string
+          titulo?: string | null
+          ordem?: number
+          criado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'midias_estabelecimento_estabelecimento_id_fkey'
+            columns: ['estabelecimento_id']
+            referencedRelation: 'estabelecimentos'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      agendamentos: {
+        Row: {
+          id: string
+          estabelecimento_id: string
+          cliente_id: string | null
+          nome_cliente: string | null
+          telefone_cliente: string | null
+          horario: string
+          status: StatusAgendamentoPortugues
+          preco_total: number
+          duracao_total_minutos: number
+          observacoes: string | null
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id?: string
+          estabelecimento_id: string
+          cliente_id?: string | null
+          nome_cliente?: string | null
+          telefone_cliente?: string | null
+          horario: string
+          status?: StatusAgendamentoPortugues
+          preco_total?: number
+          duracao_total_minutos?: number
+          observacoes?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          estabelecimento_id?: string
+          cliente_id?: string | null
+          nome_cliente?: string | null
+          telefone_cliente?: string | null
+          horario?: string
+          status?: StatusAgendamentoPortugues
+          preco_total?: number
+          duracao_total_minutos?: number
+          observacoes?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'agendamentos_estabelecimento_id_fkey'
+            columns: ['estabelecimento_id']
+            referencedRelation: 'estabelecimentos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'agendamentos_cliente_id_fkey'
+            columns: ['cliente_id']
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      itens_agendamento: {
+        Row: {
+          id: string
+          agendamento_id: string
+          servico_id: string | null
+          nome_servico: string
+          tipo_preco: TipoPreco
+          preco: number | null
+          duracao_minutos: number
+        }
+        Insert: {
+          id?: string
+          agendamento_id: string
+          servico_id?: string | null
+          nome_servico: string
+          tipo_preco?: TipoPreco
+          preco?: number | null
+          duracao_minutos?: number
+        }
+        Update: {
+          id?: string
+          agendamento_id?: string
+          servico_id?: string | null
+          nome_servico?: string
+          tipo_preco?: TipoPreco
+          preco?: number | null
+          duracao_minutos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'itens_agendamento_agendamento_id_fkey'
+            columns: ['agendamento_id']
+            referencedRelation: 'agendamentos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'itens_agendamento_servico_id_fkey'
+            columns: ['servico_id']
+            referencedRelation: 'servicos'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      categorias_servico: {
+        Row: {
+          id: string
+          nome: string
+          ordem: number
+          ativo: boolean
+          criado_em: string
+        }
+        Insert: {
+          id?: string
+          nome: string
+          ordem?: number
+          ativo?: boolean
+          criado_em?: string
+        }
+        Update: {
+          id?: string
+          nome?: string
+          ordem?: number
+          ativo?: boolean
+          criado_em?: string
+        }
+        Relationships: []
+      }
+      catalogo_servicos: {
+        Row: {
+          id: string
+          categoria_id: string
+          nome: string
+          duracao_minutos_padrao: number
+          preco_padrao: number | null
+          ativo: boolean
+          criado_em: string
+        }
+        Insert: {
+          id?: string
+          categoria_id: string
+          nome: string
+          duracao_minutos_padrao?: number
+          preco_padrao?: number | null
+          ativo?: boolean
+          criado_em?: string
+        }
+        Update: {
+          id?: string
+          categoria_id?: string
+          nome?: string
+          duracao_minutos_padrao?: number
+          preco_padrao?: number | null
+          ativo?: boolean
+          criado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'catalogo_servicos_categoria_id_fkey'
+            columns: ['categoria_id']
+            referencedRelation: 'categorias_servico'
             referencedColumns: ['id']
           },
         ]

@@ -4,9 +4,12 @@ import { useMemo, useState } from 'react'
 import { createServiceFromCatalog, suggestService } from '@/actions/admin'
 import Button from '@/components/ui/Button'
 import type { ServiceCatalogItem, ServiceSuggestion } from '@/database.types'
+import { DEFAULT_SERVICE_CATEGORY, SERVICE_CATEGORY_VALUES } from '@/lib/services/categories'
 
 const inputClass =
   'w-full rounded-[8px] border border-white/10 bg-[#11172B] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25'
+
+const categoryOptions = SERVICE_CATEGORY_VALUES
 
 export default function ServiceCatalogPicker({
   catalog,
@@ -80,9 +83,15 @@ export default function ServiceCatalogPicker({
         ))}
       </div>
 
-      <form onSubmit={handleSuggest} className="grid gap-3 rounded-[8px] border border-white/10 bg-[#11172B] p-4 md:grid-cols-[1fr_220px_auto]">
-        <input name="suggested_name" placeholder="Não achei meu serviço" className={inputClass} />
-        <input name="category" placeholder="Categoria" className={inputClass} />
+      <form onSubmit={handleSuggest} className="grid gap-3 rounded-[8px] border border-white/10 bg-[#11172B] p-4 md:grid-cols-[1fr_180px_auto]">
+        <input name="suggested_name" placeholder="Serviço que não encontrei" className={inputClass} />
+        <select name="category" defaultValue={DEFAULT_SERVICE_CATEGORY} className={inputClass}>
+          {categoryOptions.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
         <Button type="submit">Sugerir</Button>
         {errors.suggested_name ? <p className="text-xs text-[#ff8ea8] md:col-span-3">{errors.suggested_name.join(', ')}</p> : null}
         {errors._form ? <p className="text-xs text-[#ff8ea8] md:col-span-3">{errors._form.join(', ')}</p> : null}

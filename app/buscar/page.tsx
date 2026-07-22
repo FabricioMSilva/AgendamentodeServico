@@ -4,7 +4,8 @@ import dayjs from 'dayjs'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createPublicClient } from '@/lib/supabase/public'
-import { getNeedInfo, getNeedTerms } from '@/lib/search/needs'
+import { getNeedInfo, getNeedTerms, type NeedKey } from '@/lib/search/needs'
+import { mapEstabelecimento } from '@/lib/supabase/portuguese-schema-adapter'
 import type { Database, Service } from '@/database.types'
 
 type BusinessHours = Record<string, { open: string; close: string } | null>
@@ -56,6 +57,7 @@ const categoryLabels: Record<string, string> = {
   Depilação: 'depilação',
   Estética: 'estética',
   Tatuagem: 'tatuagem',
+  Piercing: 'piercing',
   Clínica: 'clínica',
   Outro: 'geral',
 }
@@ -160,6 +162,53 @@ function formatDistance(distanceKm: number | null) {
 function isWithinSearchRadius(distanceKm: number | null) {
   return distanceKm == null || distanceKm <= MAX_ESTABLISHMENT_DISTANCE_KM
 }
+
+const quizOptions: Array<{
+  key: NeedKey
+  title: string
+  description: string
+}> = [
+  {
+    key: 'Cortar cabelo',
+    title: 'Cabelo',
+    description: 'Corte, escova, cor e acabamento.',
+  },
+  {
+    key: 'Fazer unha',
+    title: 'Unhas',
+    description: 'Manicure, pedicure e alongamento.',
+  },
+  {
+    key: 'Depilação',
+    title: 'Depilação',
+    description: 'Pele lisa, limpeza e cuidados rápidos.',
+  },
+  {
+    key: 'Estética',
+    title: 'Estética',
+    description: 'Facial, massagem e bem-estar.',
+  },
+  {
+    key: 'Tatuagem',
+    title: 'Tatuagem',
+    description: 'Tattoo, flash, cobertura e retoque.',
+  },
+  {
+    key: 'Piercing',
+    title: 'Piercing',
+    description: 'Aplicação, troca de joia e avaliação.',
+  },
+  {
+    key: 'Clínica',
+    title: 'Clínica',
+    description: 'Procedimentos e saúde estética.',
+  },
+  {
+    key: 'Outro',
+    title: 'Outro',
+    description: 'Ver opções gerais perto de você.',
+  },
+]
 
 function getDistanceBucket(distanceKm: number | null) {
   if (distanceKm == null) return Number.POSITIVE_INFINITY
@@ -278,6 +327,51 @@ export default async function SearchPage({
   searchParams?: Promise<SearchParams>
 }) {
   const params = await searchParams
+
+  if (!params?.need) {
+    return (
+      <main className="min-h-screen bg-[#1A2033] px-5 py-20 text-white md:px-8">
+        <section className="mx-auto max-w-5xl">
+          <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+            <img
+              src="/imagens/ibeleza.png"
+              alt="IBeleza"
+              className="h-auto w-[128px] max-w-full object-contain sm:w-[156px]"
+            />
+            <p className="mt-5 text-[11px] uppercase tracking-[0.24em] text-white/70 sm:text-xs">
+              Busca guiada
+            </p>
+            <h1 className="mt-4 text-3xl font-semibold leading-tight sm:text-4xl md:text-5xl">
+              O que você quer fazer hoje?
+            </h1>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-white/74 sm:text-base">
+              Escolha uma necessidade para encontrar estabelecimentos, serviços e horários mais próximos.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {quizOptions.map((option) => (
+              <Link
+                key={option.key}
+                href={`/buscar?need=${encodeURIComponent(option.key)}`}
+                className="group min-h-32 rounded-[8px] bg-white/6 p-5 ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/9 hover:ring-[#8FF0F4]/45"
+              >
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-[8px] bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-sm font-bold text-white shadow-[0_12px_24px_rgba(255,0,127,0.2)]">
+                  {option.title.slice(0, 1)}
+                </span>
+                <p className="mt-4 text-xl font-semibold text-white">{option.title}</p>
+                <p className="mt-2 text-sm leading-6 text-white/66">{option.description}</p>
+                <p className="mt-4 text-sm font-semibold text-[#8FF0F4] opacity-80 transition group-hover:opacity-100">
+                  Ver opções
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </main>
+    )
+  }
+
   const need = getNeedInfo(params?.need)
   const terms = getNeedTerms(params?.need)
 
@@ -288,20 +382,32 @@ export default async function SearchPage({
   } = await supabase.auth.getUser()
   const [establishmentsResult, profileResult] = await Promise.all([
     publicDb
-      .from('establishments')
-      .select('id, slug, name, address, contact, whatsapp_phone, logo_url, business_hours, slots_per_schedule, zip_code, neighborhood, city, state, services(id, name, price, price_type, duration_minutes, category, description, image_url, is_active)')
-      .eq('is_blocked', false),
+      .from('estabelecimentos')
+      .select('id, usuario_admin_id, slug, nome, endereco, telefone, whatsapp, email, cep, bairro, cidade, estado, latitude, longitude, logo_url, horarios_funcionamento, vagas_por_horario, tipo_negocio, bloqueado, criado_em, descricao, rua, numero, complemento, instagram_url, facebook_url, youtube_url, tiktok_url, servicos(id, estabelecimento_id, nome, categoria, descricao, tipo_preco, preco, duracao_minutos, imagem_url, ativo, criado_em, atualizado_em)')
+      .eq('bloqueado', false),
     user
       ? supabase
-          .from('profiles')
-          .select('zip_code, neighborhood, city, state')
+          .from('usuarios')
+          .select('cep, bairro, cidade, estado, latitude, longitude')
           .eq('id', user.id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
   ])
 
-  const establishments = (establishmentsResult.data ?? []) as EstablishmentWithServices[]
-  const userLocation = (profileResult.data ?? null) as UserLocation | null
+  const establishments = ((establishmentsResult.data ?? []) as Parameters<typeof mapEstabelecimento>[0][]).map(
+    mapEstabelecimento,
+  ) as EstablishmentWithServices[]
+  const profile = profileResult.data
+  const userLocation = profile
+    ? ({
+        zip_code: profile.cep,
+        neighborhood: profile.bairro,
+        city: profile.cidade,
+        state: profile.estado,
+        latitude: profile.latitude,
+        longitude: profile.longitude,
+      } satisfies UserLocation)
+    : null
   const matched = establishments
     .map((establishment) => {
       const services = (establishment.services ?? []).filter((service) => {
@@ -331,19 +437,29 @@ export default async function SearchPage({
     const availabilityEnd = new Date()
     availabilityEnd.setDate(availabilityEnd.getDate() + 180)
     const { data: reservedRaw } = await db
-      .from('appointments')
-      .select('establishment_id, scheduled_at, total_duration_minutes')
+      .from('agendamentos')
+      .select('estabelecimento_id, horario, duracao_total_minutos')
       .in(
-        'establishment_id',
+        'estabelecimento_id',
         candidates.map((item) => item.id),
       )
-      .in('status', ['pending', 'confirmed', 'checked_in'])
-      .gte('scheduled_at', new Date().toISOString())
-      .lt('scheduled_at', availabilityEnd.toISOString())
-      .order('scheduled_at', { ascending: true })
+      .in('status', ['pendente', 'confirmado', 'em_atendimento'])
+      .gte('horario', new Date().toISOString())
+      .lt('horario', availabilityEnd.toISOString())
+      .order('horario', { ascending: true })
       .limit(1000)
 
-    reservedSlots.push(...((reservedRaw ?? []) as ReservedSlot[]))
+    reservedSlots.push(
+      ...((reservedRaw ?? []) as {
+        estabelecimento_id: string
+        horario: string
+        duracao_total_minutos: number
+      }[]).map((slot) => ({
+        establishment_id: slot.estabelecimento_id,
+        scheduled_at: slot.horario,
+        total_duration_minutes: slot.duracao_total_minutos,
+      })),
+    )
   }
 
   const rankedEstablishments = candidates.map((establishment) => {
@@ -514,7 +630,7 @@ export default async function SearchPage({
 
                     <Link
                       href={`/${establishment.slug}`}
-                      className="inline-flex min-h-11 items-center justify-center rounded-full bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] px-4 text-sm font-semibold text-white transition hover:opacity-90"
+                      className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] px-4 text-sm font-semibold text-white transition hover:opacity-90 md:w-auto"
                     >
                       Abrir agenda
                     </Link>

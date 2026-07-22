@@ -9,13 +9,17 @@ export default async function SalesLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = user
     ? await supabase
-        .from('profiles')
-        .select('phone')
+        .from('usuarios')
+        .select('telefone, nivel_acesso, conta_bloqueada')
         .eq('id', user.id)
         .maybeSingle()
     : { data: null }
 
-  if (!user || !isSuperAdmin({ email: user.email, phone: profile?.phone })) {
+  if (profile?.conta_bloqueada) {
+    redirect('/conta-bloqueada')
+  }
+
+  if (!user || (!isSuperAdmin({ email: user.email, phone: profile?.telefone }) && profile?.nivel_acesso !== 'administrador')) {
     redirect('/')
   }
 

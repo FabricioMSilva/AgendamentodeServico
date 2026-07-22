@@ -31,6 +31,7 @@ export default function ProfileSettingsForm({ establishment }: { establishment: 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <input type="hidden" name="establishment_id" value={establishment.id} />
       {errors._form ? (
         <p className="rounded-[8px] bg-[#ff8ea8]/12 p-3 text-sm text-[#ff8ea8] ring-1 ring-[#ff8ea8]/20">
           {errors._form.join(', ')}

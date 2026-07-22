@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation'
 import BlockedScreen from '@/components/customer/BlockedScreen'
 import BookingForm from '@/components/customer/BookingForm'
 import EstablishmentInfoMenu from '@/components/customer/EstablishmentInfoMenu'
+import { mapEstabelecimento, mapMidiaEstabelecimento } from '@/lib/supabase/portuguese-schema-adapter'
 import type { EstablishmentMedia, Service } from '@/database.types'
 
 type BusinessHours = Record<string, { open: string; close: string } | null>
@@ -53,11 +54,11 @@ function formatBusinessHours(hours: BusinessHours) {
 const getEstablishment = cache(async (slug: string) => {
   const supabase = await createClient()
   const { data } = await supabase
-    .from('establishments')
-    .select('*, services(*)')
+    .from('estabelecimentos')
+    .select('*, servicos(*)')
     .eq('slug', slug)
     .single()
-  return data
+  return data ? mapEstabelecimento(data) : null
 })
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -90,29 +91,40 @@ export default async function SlugPage({ params }: Props) {
   availabilityEnd.setDate(availabilityEnd.getDate() + 180)
   const [{ data: reservedSlots }, { data: mediaRaw }] = await Promise.all([
     db
-      .from('appointments')
-      .select('scheduled_at, total_duration_minutes, customer_name')
-      .eq('establishment_id', est.id)
-      .in('status', ['pending', 'confirmed', 'checked_in'])
-      .gte('scheduled_at', new Date().toISOString())
-      .lt('scheduled_at', availabilityEnd.toISOString())
-      .order('scheduled_at', { ascending: true })
+      .from('agendamentos')
+      .select('horario, duracao_total_minutos, nome_cliente')
+      .eq('estabelecimento_id', est.id)
+      .in('status', ['pendente', 'confirmado', 'em_atendimento'])
+      .gte('horario', new Date().toISOString())
+      .lt('horario', availabilityEnd.toISOString())
+      .order('horario', { ascending: true })
       .limit(1000),
     db
-      .from('establishment_media')
+      .from('midias_estabelecimento')
       .select('*')
-      .eq('establishment_id', est.id)
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: true }),
+      .eq('estabelecimento_id', est.id)
+      .order('ordem', { ascending: true })
+      .order('criado_em', { ascending: true }),
   ])
 
   const services = (est.services ?? [])
     .filter((service) => service.is_active)
     .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
+  const reserved = ((reservedSlots ?? []) as {
+    horario: string
+    duracao_total_minutos: number
+    nome_cliente: string | null
+  }[]).map((slot) => ({
+    scheduled_at: slot.horario,
+    total_duration_minutes: slot.duracao_total_minutos,
+    customer_name: slot.nome_cliente,
+  }))
   const hours = (est.business_hours as BusinessHours) ?? {}
   const openDays = Object.values(hours).filter(Boolean).length
   const initials = getInitials(est.name)
-  const gallery = ((mediaRaw ?? []) as EstablishmentMedia[]).filter((item) => item.media_type === 'image')
+  const gallery = ((mediaRaw ?? []) as Parameters<typeof mapMidiaEstabelecimento>[0][])
+    .map(mapMidiaEstabelecimento)
+    .filter((item) => item.media_type === 'image') as EstablishmentMedia[]
   const heroImage = gallery[0]?.url ?? est.logo_url
   const categoryGroups = Array.from(
     services.reduce((groups, service) => {
@@ -152,7 +164,7 @@ export default async function SlugPage({ params }: Props) {
     : 'Cidade não informada'
 
   return (
-    <main className="h-svh overflow-hidden bg-[#0c1120] text-white">
+    <main className="min-h-screen bg-[#0c1120] text-white">
       <div className="mx-auto grid h-full max-w-7xl grid-rows-[auto_minmax(0,1fr)] gap-3 px-3 py-3 sm:px-4">
         <nav className="flex h-10 items-center justify-between gap-4">
           <Link href="/" className="inline-flex items-center gap-3">
@@ -163,7 +175,7 @@ export default async function SlugPage({ params }: Props) {
           </Link>
           <Link
             href="#agendar"
-            className="inline-flex min-h-9 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-[#11172b] transition hover:bg-white/90"
+            className="inline-flex min-h-9 w-full items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-[#11172b] transition hover:bg-white/90 lg:w-auto"
           >
             Agendar
           </Link>
@@ -216,7 +228,7 @@ export default async function SlugPage({ params }: Props) {
               socials={socials}
             />
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div className="rounded-[8px] bg-white/6 p-2 ring-1 ring-white/8">
                 <p className="text-lg font-semibold">{services.length}</p>
                 <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/45">serviços</p>
@@ -252,7 +264,7 @@ export default async function SlugPage({ params }: Props) {
               services={services}
               businessHours={hours}
               slotsPerSchedule={est.slots_per_schedule}
-              reservedSlots={(reservedSlots ?? []) as ReservedSlot[]}
+              reservedSlots={reserved}
             />
           </section>
         </div>

@@ -5,7 +5,7 @@ import {
   getLoginPhoneCandidates,
   hashLoginCode,
   normalizeLoginPhone,
-  toLoginEmail,
+  toLoginAuthPhone,
 } from '@/lib/login'
 
 export const dynamic = 'force-dynamic'
@@ -32,28 +32,19 @@ async function findAccountByPhone(
   phone: string,
 ) {
   const candidates = getLoginPhoneCandidates(phone)
+  const authPhone = toLoginAuthPhone(phone)
 
   const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, phone')
-    .in('phone', candidates)
+    .from('usuarios')
+    .select('id, telefone, email')
+    .in('telefone', [authPhone, ...candidates])
     .maybeSingle()
 
   if (profile?.id) {
-    return profile
+    return { id: profile.id, phone: profile.telefone ?? phone, email: profile.email }
   }
 
-  const email = toLoginEmail(phone)
-  const { data: users } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
-  const user = users.users.find((entry) => {
-    const userPhone = typeof entry.user_metadata?.phone === 'string' ? entry.user_metadata.phone : ''
-    return (
-      entry.email?.toLowerCase() === email.toLowerCase() ||
-      candidates.includes(userPhone.replace(/\D/g, ''))
-    )
-  })
-
-  return user ? { id: user.id, phone } : null
+  return null
 }
 
 export async function POST(request: Request) {
@@ -75,12 +66,13 @@ export async function POST(request: Request) {
     }
 
     const supabase = createAdminClient()
+    const authPhone = toLoginAuthPhone(phone)
     const { data: record } = await supabase
-      .from('login_codes')
-      .select('id, code_hash, expires_at, attempts, consumed_at')
-      .eq('phone', phone)
-      .is('consumed_at', null)
-      .order('created_at', { ascending: false })
+      .from('codigos_login')
+      .select('id, codigo_hash, expira_em, tentativas, consumido_em')
+      .eq('telefone', authPhone)
+      .is('consumido_em', null)
+      .order('criado_em', { ascending: false })
       .limit(1)
       .maybeSingle()
 
@@ -88,21 +80,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Código inválido ou expirado.' }, { status: 400 })
     }
 
-    if (new Date(record.expires_at).getTime() < Date.now()) {
-      await supabase.from('login_codes').delete().eq('id', record.id)
+    if (new Date(record.expira_em).getTime() < Date.now()) {
+      await supabase.from('codigos_login').delete().eq('id', record.id)
       return NextResponse.json({ error: 'Código inválido ou expirado.' }, { status: 400 })
     }
 
-    if (record.attempts >= 5) {
-      await supabase.from('login_codes').delete().eq('id', record.id)
+    if (record.tentativas >= 5) {
+      await supabase.from('codigos_login').delete().eq('id', record.id)
       return NextResponse.json({ error: 'Código inválido ou expirado.' }, { status: 400 })
     }
 
-    const expectedHash = hashLoginCode(phone, code)
-    if (expectedHash !== record.code_hash) {
+    const expectedHash = hashLoginCode(authPhone, code)
+    if (expectedHash !== record.codigo_hash) {
       await supabase
-        .from('login_codes')
-        .update({ attempts: record.attempts + 1 })
+        .from('codigos_login')
+        .update({ tentativas: record.tentativas + 1 })
         .eq('id', record.id)
 
       return NextResponse.json({ error: 'Código inválido ou expirado.' }, { status: 400 })
@@ -123,12 +115,13 @@ export async function POST(request: Request) {
     }
 
     await supabase
-      .from('login_codes')
-      .update({ consumed_at: new Date().toISOString() })
+      .from('codigos_login')
+      .update({ consumido_em: new Date().toISOString() })
       .eq('id', record.id)
 
     return NextResponse.json({
       ok: true,
+      email: account.email,
       tempPassword: temporaryPassword,
     })
   } catch {

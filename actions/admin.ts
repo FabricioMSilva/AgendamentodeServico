@@ -4,20 +4,28 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { formatAddress, normalizeCep } from '@/lib/address'
-import { decideAppointmentApproval } from '@/lib/appointments/approval'
+import { DEFAULT_SERVICE_CATEGORY } from '@/lib/services/categories'
 
-async function getAdminEstablishmentId(): Promise<string> {
+async function getAdminEstablishmentId(requestedEstablishmentId?: FormDataEntryValue | string | null): Promise<string> {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) throw new Error('Não autenticado')
 
-  const { data } = await supabase
-    .from('establishments')
+  let query = supabase
+    .from('estabelecimentos')
     .select('id')
-    .eq('admin_id', user.id)
-    .single()
+    .eq('usuario_admin_id', user.id)
+
+  if (typeof requestedEstablishmentId === 'string' && requestedEstablishmentId.trim()) {
+    query = query.eq('id', requestedEstablishmentId.trim())
+  }
+
+  const { data } = await query
+    .order('criado_em', { ascending: true })
+    .limit(1)
+    .maybeSingle()
 
   if (!data) throw new Error('Nenhum estabelecimento encontrado para este administrador')
   return data.id
@@ -28,10 +36,14 @@ const ServiceSchema = z.object({
   price_type: z.enum(['fixed', 'variable']),
   price: z.coerce.number().min(0).optional(),
   duration_minutes: z.coerce.number().int().min(10).max(480).default(30),
-  category: z.string().min(2).max(60).default('Saúde e beleza'),
+  category: z.string().min(2).max(80).default(DEFAULT_SERVICE_CATEGORY),
   description: z.string().max(500).optional(),
   image_url: z.string().url().optional().or(z.literal('')),
 })
+
+function toTipoPreco(value: 'fixed' | 'variable') {
+  return value === 'variable' ? 'variavel' : 'fixo'
+}
 
 export async function createService(formData: FormData): Promise<{
   success?: boolean
@@ -39,7 +51,7 @@ export async function createService(formData: FormData): Promise<{
 }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(formData.get('establishment_id'))
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro desconhecido'
     return { error: { _form: [message] } }
@@ -52,21 +64,24 @@ export async function createService(formData: FormData): Promise<{
     price_type: formData.get('price_type'),
     price: formData.get('price') || undefined,
     duration_minutes: formData.get('duration_minutes') || 30,
-    category: formData.get('category') || 'Saúde e beleza',
+    category: formData.get('category') || DEFAULT_SERVICE_CATEGORY,
     description: formData.get('description') || undefined,
     image_url: formData.get('image_url') || undefined,
   })
 
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors as Record<string, string[]> }
 
-  const { error } = await supabase
-    .from('services')
-    .insert({
-      ...parsed.data,
-      image_url: parsed.data.image_url || null,
-      description: parsed.data.description || null,
-      establishment_id: establishmentId,
-    })
+  const { error } = await supabase.from('servicos').insert({
+    estabelecimento_id: establishmentId,
+    nome: parsed.data.name,
+    categoria: parsed.data.category,
+    descricao: parsed.data.description || null,
+    tipo_preco: toTipoPreco(parsed.data.price_type),
+    preco: parsed.data.price ?? null,
+    duracao_minutos: parsed.data.duration_minutes,
+    imagem_url: parsed.data.image_url || null,
+    ativo: true,
+  })
 
   if (error) return { error: { _form: [error.message] } }
 
@@ -80,7 +95,7 @@ export async function updateService(formData: FormData): Promise<{
 }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(formData.get('establishment_id'))
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro desconhecido'
     return { error: { _form: [message] } }
@@ -94,7 +109,7 @@ export async function updateService(formData: FormData): Promise<{
     price_type: formData.get('price_type'),
     price: formData.get('price') || undefined,
     duration_minutes: formData.get('duration_minutes') || 30,
-    category: formData.get('category') || 'Saúde e beleza',
+    category: formData.get('category') || DEFAULT_SERVICE_CATEGORY,
     description: formData.get('description') || undefined,
     image_url: formData.get('image_url') || undefined,
   })
@@ -103,14 +118,18 @@ export async function updateService(formData: FormData): Promise<{
 
   const supabase = await createClient()
   const { error } = await supabase
-    .from('services')
+    .from('servicos')
     .update({
-      ...parsed.data,
-      image_url: parsed.data.image_url || null,
-      description: parsed.data.description || null,
+      nome: parsed.data.name,
+      categoria: parsed.data.category,
+      descricao: parsed.data.description || null,
+      tipo_preco: toTipoPreco(parsed.data.price_type),
+      preco: parsed.data.price ?? null,
+      duracao_minutos: parsed.data.duration_minutes,
+      imagem_url: parsed.data.image_url || null,
     })
     .eq('id', id.data)
-    .eq('establishment_id', establishmentId)
+    .eq('estabelecimento_id', establishmentId)
 
   if (error) return { error: { _form: [error.message] } }
 
@@ -121,20 +140,21 @@ export async function updateService(formData: FormData): Promise<{
 export async function setServiceActive(
   serviceId: string,
   isActive: boolean,
+  requestedEstablishmentId?: string,
 ): Promise<{ success?: boolean; error?: string }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(requestedEstablishmentId)
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
 
   const supabase = await createClient()
   const { error } = await supabase
-    .from('services')
-    .update({ is_active: isActive })
+    .from('servicos')
+    .update({ ativo: isActive })
     .eq('id', serviceId)
-    .eq('establishment_id', establishmentId)
+    .eq('estabelecimento_id', establishmentId)
 
   if (error) return { error: error.message }
 
@@ -143,11 +163,12 @@ export async function setServiceActive(
 }
 
 export async function deleteService(
-  serviceId: string
+  serviceId: string,
+  requestedEstablishmentId?: string
 ): Promise<{ success?: boolean; error?: string }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(requestedEstablishmentId)
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
@@ -155,10 +176,10 @@ export async function deleteService(
   const supabase = await createClient()
 
   const { error } = await supabase
-    .from('services')
+    .from('servicos')
     .delete()
     .eq('id', serviceId)
-    .eq('establishment_id', establishmentId)
+    .eq('estabelecimento_id', establishmentId)
 
   if (error) return { error: error.message }
 
@@ -274,7 +295,7 @@ function friendlyEstablishmentError(message: string) {
     message.includes("'neighborhood' column") ||
     message.includes("schema cache")
   ) {
-    return 'Seu banco ainda não tem os campos de endereço. Rode a migration supabase/migrations/20240101000004_address_fields.sql no Supabase.'
+    return 'Seu banco ainda não tem os campos de endereço. Rode o arquivo supabase/reset_portugues_login.sql no Supabase.'
   }
 
   return message
@@ -286,7 +307,7 @@ export async function updateProfileSettings(formData: FormData): Promise<{
 }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(formData.get('establishment_id'))
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro desconhecido'
     return { error: { _form: [message] } }
@@ -317,26 +338,25 @@ export async function updateProfileSettings(formData: FormData): Promise<{
   const { zipCode, address } = makeAddressFromProfile(parsed.data)
   const supabase = await createClient()
   const { error } = await supabase
-    .from('establishments')
+    .from('estabelecimentos')
     .update({
-      name: parsed.data.name,
-      contact: cleanOptional(parsed.data.contact),
-      phone: cleanOptional(parsed.data.phone),
+      nome: parsed.data.name,
+      telefone: cleanOptional(parsed.data.phone) ?? cleanOptional(parsed.data.contact),
       email: cleanOptional(parsed.data.email),
-      whatsapp_phone: cleanOptional(parsed.data.whatsapp_phone),
+      whatsapp: cleanOptional(parsed.data.whatsapp_phone),
       instagram_url: cleanOptional(parsed.data.instagram_url),
       facebook_url: cleanOptional(parsed.data.facebook_url),
       youtube_url: cleanOptional(parsed.data.youtube_url),
       tiktok_url: cleanOptional(parsed.data.tiktok_url),
-      business_type: parsed.data.business_type,
-      address: address || null,
-      zip_code: zipCode || null,
-      street: cleanOptional(parsed.data.street),
-      number: cleanOptional(parsed.data.number),
-      complement: cleanOptional(parsed.data.complement),
-      neighborhood: cleanOptional(parsed.data.neighborhood),
-      city: cleanOptional(parsed.data.city),
-      state: cleanOptional(parsed.data.state),
+      tipo_negocio: parsed.data.business_type,
+      endereco: address || null,
+      cep: zipCode || null,
+      rua: cleanOptional(parsed.data.street),
+      numero: cleanOptional(parsed.data.number),
+      complemento: cleanOptional(parsed.data.complement),
+      bairro: cleanOptional(parsed.data.neighborhood),
+      cidade: cleanOptional(parsed.data.city),
+      estado: cleanOptional(parsed.data.state),
     })
     .eq('id', establishmentId)
 
@@ -353,7 +373,7 @@ export async function updateBusinessHours(formData: FormData): Promise<{
 }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(formData.get('establishment_id'))
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro desconhecido'
     return { error: { _form: [message] } }
@@ -380,12 +400,9 @@ export async function updateBusinessHours(formData: FormData): Promise<{
 
   const supabase = await createClient()
   const { error } = await supabase
-    .from('establishments')
+    .from('estabelecimentos')
     .update({
-      business_hours: businessHours,
-      reminder_hours_before: parsed.data.reminder_hours_before,
-      auto_cancel_hours_before: parsed.data.auto_cancel_hours_before,
-      reminder_message: cleanOptional(parsed.data.reminder_message),
+      horarios_funcionamento: businessHours,
     })
     .eq('id', establishmentId)
 
@@ -401,7 +418,7 @@ export async function updateEstablishmentSettings(formData: FormData): Promise<{
 }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(formData.get('establishment_id'))
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro desconhecido'
     return { error: { _form: [message] } }
@@ -448,20 +465,21 @@ export async function updateEstablishmentSettings(formData: FormData): Promise<{
 
   const supabase = await createClient()
   const { error } = await supabase
-    .from('establishments')
+    .from('estabelecimentos')
     .update({
-      ...parsed.data,
-      business_hours: businessHours,
-      contact: parsed.data.contact || null,
-      whatsapp_phone: parsed.data.whatsapp_phone || null,
-      address: address || null,
-      zip_code: zipCode || null,
-      street: parsed.data.street || null,
-      number: parsed.data.number || null,
-      complement: parsed.data.complement || null,
-      neighborhood: parsed.data.neighborhood || null,
-      city: parsed.data.city || null,
-      state: parsed.data.state || null,
+      nome: parsed.data.name,
+      telefone: parsed.data.contact || null,
+      whatsapp: parsed.data.whatsapp_phone || null,
+      endereco: address || null,
+      cep: zipCode || null,
+      rua: parsed.data.street || null,
+      numero: parsed.data.number || null,
+      complemento: parsed.data.complement || null,
+      bairro: parsed.data.neighborhood || null,
+      cidade: parsed.data.city || null,
+      estado: parsed.data.state || null,
+      vagas_por_horario: parsed.data.slots_per_schedule,
+      horarios_funcionamento: businessHours,
     })
     .eq('id', establishmentId)
 
@@ -472,11 +490,12 @@ export async function updateEstablishmentSettings(formData: FormData): Promise<{
 }
 
 export async function updateLogoUrl(
-  logoUrl: string
+  logoUrl: string,
+  requestedEstablishmentId?: string
 ): Promise<{ success?: boolean; error?: string }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(requestedEstablishmentId)
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
@@ -484,7 +503,7 @@ export async function updateLogoUrl(
   const supabase = await createClient()
 
   const { error } = await supabase
-    .from('establishments')
+    .from('estabelecimentos')
     .update({ logo_url: logoUrl })
     .eq('id', establishmentId)
 
@@ -499,7 +518,7 @@ export async function uploadLogo(
 ): Promise<{ url?: string; error?: string }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(formData.get('establishment_id'))
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
@@ -533,7 +552,7 @@ export async function uploadLogo(
 
   const { data } = supabase.storage.from('logos').getPublicUrl(path)
 
-  const updateResult = await updateLogoUrl(data.publicUrl)
+  const updateResult = await updateLogoUrl(data.publicUrl, establishmentId)
   if (updateResult.error) return { error: updateResult.error }
 
   return { url: data.publicUrl }
@@ -544,17 +563,17 @@ export async function uploadMediaImage(
 ): Promise<{ url?: string; error?: string }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(formData.get('establishment_id'))
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
 
   const supabase = await createClient()
   const { count, error: countError } = await supabase
-    .from('establishment_media')
+    .from('midias_estabelecimento')
     .select('id', { count: 'exact', head: true })
-    .eq('establishment_id', establishmentId)
-    .eq('media_type', 'image')
+    .eq('estabelecimento_id', establishmentId)
+    .eq('tipo', 'imagem')
 
   if (countError) return { error: countError.message }
   if ((count ?? 0) >= 6) return { error: 'Você já tem 6 fotos. Exclua uma para enviar outra.' }
@@ -581,12 +600,11 @@ export async function uploadMediaImage(
   if (uploadError) return { error: uploadError.message }
 
   const { data } = supabase.storage.from('establishment-media').getPublicUrl(path)
-  const { error } = await supabase.from('establishment_media').insert({
-    establishment_id: establishmentId,
-    media_type: 'image',
-    provider: 'upload',
+  const { error } = await supabase.from('midias_estabelecimento').insert({
+    estabelecimento_id: establishmentId,
+    tipo: 'imagem',
     url: data.publicUrl,
-    sort_order: count ?? 0,
+    ordem: count ?? 0,
   })
 
   if (error) return { error: error.message }
@@ -602,7 +620,7 @@ export async function addMediaVideo(formData: FormData): Promise<{
 }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(formData.get('establishment_id'))
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro desconhecido'
     return { error: { _form: [message] } }
@@ -621,13 +639,12 @@ export async function addMediaVideo(formData: FormData): Promise<{
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('establishment_media').insert({
-    establishment_id: establishmentId,
-    media_type: 'video',
-    provider,
+  const { error } = await supabase.from('midias_estabelecimento').insert({
+    estabelecimento_id: establishmentId,
+    tipo: 'video',
     url: parsed.data.url,
-    title: parsed.data.title || null,
-    sort_order: 100,
+    titulo: parsed.data.title || provider,
+    ordem: 100,
   })
 
   if (error) return { error: { _form: [error.message] } }
@@ -637,20 +654,23 @@ export async function addMediaVideo(formData: FormData): Promise<{
   return { success: true }
 }
 
-export async function deleteMedia(mediaId: string): Promise<{ success?: boolean; error?: string }> {
+export async function deleteMedia(
+  mediaId: string,
+  requestedEstablishmentId?: string
+): Promise<{ success?: boolean; error?: string }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(requestedEstablishmentId)
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
 
   const supabase = await createClient()
   const { error } = await supabase
-    .from('establishment_media')
+    .from('midias_estabelecimento')
     .delete()
     .eq('id', mediaId)
-    .eq('establishment_id', establishmentId)
+    .eq('estabelecimento_id', establishmentId)
 
   if (error) return { error: error.message }
 
@@ -662,7 +682,7 @@ export async function deleteMedia(mediaId: string): Promise<{ success?: boolean;
 export async function createServiceFromCatalog(formData: FormData): Promise<{ success?: boolean; error?: string }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(formData.get('establishment_id'))
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
@@ -701,7 +721,7 @@ export async function suggestService(formData: FormData): Promise<{
 }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(formData.get('establishment_id'))
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro desconhecido'
     return { error: { _form: [message] } }
@@ -733,36 +753,34 @@ export async function suggestService(formData: FormData): Promise<{
 // ── Gestao de agendamentos ────────────────────────────────────────────────────
 
 export async function confirmAppointment(
-  appointmentId: string
+  appointmentId: string,
+  requestedEstablishmentId?: string,
 ): Promise<{ success?: boolean; error?: string }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(requestedEstablishmentId)
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
   const { data: appointment } = await supabase
-    .from('appointments')
+    .from('agendamentos')
     .select('id')
     .eq('id', appointmentId)
-    .eq('establishment_id', establishmentId)
+    .eq('estabelecimento_id', establishmentId)
     .single()
 
   if (!appointment) return { error: 'Agendamento não encontrado.' }
 
-  const result = await decideAppointmentApproval({
-    appointmentId,
-    decision: 'approved',
-    actorProfileId: user?.id ?? null,
-    notes: 'Aprovado pelo painel administrativo.',
-  })
-  if (result.error) return { error: result.error }
+  const { error } = await supabase
+    .from('agendamentos')
+    .update({ status: 'confirmado' })
+    .eq('id', appointmentId)
+    .eq('estabelecimento_id', establishmentId)
+
+  if (error) return { error: error.message }
 
   revalidatePath('/admin/dashboard')
   return { success: true }
@@ -770,49 +788,37 @@ export async function confirmAppointment(
 
 export async function finalizeAppointment(
   appointmentId: string,
-  outcome: 'completed' | 'cancelled' | 'no_show'
+  outcome: 'completed' | 'cancelled' | 'no_show',
+  requestedEstablishmentId?: string,
 ): Promise<{ success?: boolean; error?: string }> {
   let establishmentId: string
   try {
-    establishmentId = await getAdminEstablishmentId()
+    establishmentId = await getAdminEstablishmentId(requestedEstablishmentId)
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
   const { data: before } = await supabase
-    .from('appointments')
-    .select('status, total_price')
+    .from('agendamentos')
+    .select('status')
     .eq('id', appointmentId)
-    .eq('establishment_id', establishmentId)
+    .eq('estabelecimento_id', establishmentId)
     .single()
 
-  if (outcome === 'cancelled' && before?.status === 'pending') {
-    const result = await decideAppointmentApproval({
-      appointmentId,
-      decision: 'rejected',
-      actorProfileId: user?.id ?? null,
-      notes: 'Recusado pelo painel administrativo.',
-    })
-    if (result.error) return { error: result.error }
-    revalidatePath('/admin/dashboard')
-    return { success: true }
-  }
+  if (!before) return { error: 'Agendamento não encontrado.' }
+
+  const status =
+    outcome === 'completed' ? 'concluido' : outcome === 'no_show' ? 'nao_compareceu' : 'cancelado'
 
   const { error } = await supabase
-    .from('appointments')
+    .from('agendamentos')
     .update({
-      status: outcome,
-      owner_decision_at: new Date().toISOString(),
-      owner_decision_by: user?.id ?? null,
-      customer_confirmation_status: outcome === 'completed' ? 'confirmed' : 'not_requested',
+      status,
     })
     .eq('id', appointmentId)
-    .eq('establishment_id', establishmentId)
+    .eq('estabelecimento_id', establishmentId)
 
   if (error) {
     if (error.message.includes('P0002'))
@@ -821,19 +827,6 @@ export async function finalizeAppointment(
       return { error: 'Transição de status inválida.' }
     return { error: error.message }
   }
-
-  const eventType =
-    outcome === 'completed' ? 'completed' : outcome === 'no_show' ? 'no_show' : 'owner_rejected'
-
-  await supabase.from('appointment_events').insert({
-    appointment_id: appointmentId,
-    establishment_id: establishmentId,
-    actor_profile_id: user?.id ?? null,
-    event_type: eventType,
-    status_from: before?.status ?? null,
-    status_to: outcome,
-    amount: outcome === 'completed' ? before?.total_price ?? null : null,
-  })
 
   revalidatePath('/admin/dashboard')
   return { success: true }

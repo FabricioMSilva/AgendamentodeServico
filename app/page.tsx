@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuperAdmin } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
@@ -34,17 +35,42 @@ export default async function Home() {
   }
 
   const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, phone')
+    .from('usuarios')
+    .select('nivel_acesso, telefone, tipo_cadastro, comerciante_status, comerciante_ativo, conta_bloqueada')
     .eq('id', user.id)
     .maybeSingle()
 
-  if (isSuperAdmin({ email: user.email, phone: profile?.phone })) {
+  if (profile?.conta_bloqueada) {
+    redirect('/conta-bloqueada')
+  }
+
+  if (isSuperAdmin({ email: user.email, phone: profile?.telefone }) || profile?.nivel_acesso === 'administrador') {
     redirect('/sales/dashboard')
   }
 
-  if (profile?.role === 'admin') {
-    redirect('/admin/dashboard')
+  if (profile?.tipo_cadastro === 'comerciante' && profile?.comerciante_status !== 'aprovado') {
+    redirect('/aguardando-aprovacao')
+  }
+
+  if (profile?.nivel_acesso === 'profissional' && profile?.comerciante_ativo) {
+    const db = createAdminClient()
+    const { data: establishment } = await db
+      .from('estabelecimentos')
+      .select('status_aprovacao')
+      .eq('usuario_admin_id', user.id)
+      .order('criado_em', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (establishment?.status_aprovacao === 'aprovado') {
+      redirect('/admin/dashboard')
+    }
+
+    if (establishment?.status_aprovacao === 'pendente') {
+      redirect('/aguardando-aprovacao?tipo=estabelecimento')
+    }
+
+    redirect('/dono')
   }
 
   redirect('/buscar')

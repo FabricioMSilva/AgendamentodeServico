@@ -1,11 +1,11 @@
 'use server'
 
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import dayjs from 'dayjs'
-import { queueOwnerApprovalRequest } from '@/lib/appointments/approval'
 
 const BookSchema = z.object({
   establishment_id: z.string().uuid(),
@@ -44,9 +44,16 @@ export async function bookAppointment(formData: FormData): Promise<BookResult> {
   const supabase = await createClient()
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  console.log('[bookAppointment] auth user error', userError)
+  console.log('[bookAppointment] auth user', user)
+  if (!user) {
+    console.log('[bookAppointment] user not authenticated')
+    return { error: { _form: ['Faça login para agendar.'] } }
+  }
 
+  const adminDb = createAdminClient()
   const parsed = BookSchema.safeParse({
     establishment_id: formData.get('establishment_id'),
     service_ids: formData.get('service_ids'),
@@ -60,14 +67,17 @@ export async function bookAppointment(formData: FormData): Promise<BookResult> {
     return { error: parsed.error.flatten().fieldErrors as Record<string, string[]> }
   }
 
-  const { data: services, error: servicesError } = await supabase
-    .from('services')
-    .select('id, name, price_type, price, duration_minutes, is_active')
-    .eq('establishment_id', parsed.data.establishment_id)
+  const { data: services, error: servicesError } = await adminDb
+    .from('servicos')
+    .select('id, nome, tipo_preco, preco, duracao_minutos, ativo')
+    .eq('estabelecimento_id', parsed.data.establishment_id)
     .in('id', parsed.data.service_ids)
-    .eq('is_active', true)
+    .eq('ativo', true)
 
-  if (servicesError) return { error: { _form: [servicesError.message] } }
+  if (servicesError) {
+    console.log('[bookAppointment] servicesError', servicesError)
+    return { error: { _form: [servicesError.message] } }
+  }
 
   if (!services || services.length !== parsed.data.service_ids.length) {
     return { error: { _form: ['Um ou mais serviços não estão disponíveis.'] } }
@@ -80,12 +90,12 @@ export async function bookAppointment(formData: FormData): Promise<BookResult> {
   })
 
   const totalDuration = orderedServices.reduce(
-    (sum, service) => sum + service.duration_minutes,
+    (sum, service) => sum + service.duracao_minutos,
     0,
   )
   const fixedPrices = orderedServices
-    .filter((service) => service.price_type === 'fixed' && service.price != null)
-    .map((service) => Number(service.price))
+    .filter((service) => service.tipo_preco === 'fixo' && service.preco != null)
+    .map((service) => Number(service.preco))
   const totalPrice =
     fixedPrices.length === orderedServices.length
       ? fixedPrices.reduce((sum, price) => sum + price, 0)
@@ -93,20 +103,23 @@ export async function bookAppointment(formData: FormData): Promise<BookResult> {
 
   const requestedStart = dayjs(parsed.data.scheduled_at)
   const requestedEnd = requestedStart.add(totalDuration, 'minute')
-  const { data: appointments, error: appointmentsError } = await supabase
-    .from('appointments')
-    .select('scheduled_at, total_duration_minutes')
-    .eq('establishment_id', parsed.data.establishment_id)
-    .in('status', ['pending', 'confirmed', 'checked_in'])
-    .gte('scheduled_at', requestedStart.startOf('day').toISOString())
-    .lt('scheduled_at', requestedStart.endOf('day').toISOString())
+  const { data: appointments, error: appointmentsError } = await adminDb
+    .from('agendamentos')
+    .select('horario, duracao_total_minutos')
+    .eq('estabelecimento_id', parsed.data.establishment_id)
+    .in('status', ['pendente', 'confirmado', 'em_atendimento'])
+    .gte('horario', requestedStart.startOf('day').toISOString())
+    .lt('horario', requestedStart.endOf('day').toISOString())
 
-  if (appointmentsError) return { error: { _form: [appointmentsError.message] } }
+  if (appointmentsError) {
+    console.log('[bookAppointment] appointmentsError', appointmentsError)
+    return { error: { _form: [appointmentsError.message] } }
+  }
 
   const hasConflict = (appointments ?? []).some((appointment) => {
-    const existingStart = dayjs(appointment.scheduled_at)
+    const existingStart = dayjs(appointment.horario)
     const existingEnd = existingStart.add(
-      appointment.total_duration_minutes ?? 30,
+      appointment.duracao_total_minutos ?? 30,
       'minute',
     )
     return requestedStart.isBefore(existingEnd) && requestedEnd.isAfter(existingStart)
@@ -116,23 +129,23 @@ export async function bookAppointment(formData: FormData): Promise<BookResult> {
     return { error: { _form: ['Este horário acabou de ser ocupado. Escolha outro.'] } }
   }
 
-  const { data: appointment, error } = await supabase
-    .from('appointments')
+  const { data: appointment, error } = await adminDb
+    .from('agendamentos')
     .insert({
-      customer_id: user.id,
-      establishment_id: parsed.data.establishment_id,
-      service_id: orderedServices[0].id,
-      scheduled_at: parsed.data.scheduled_at,
-      customer_name: parsed.data.customer_name,
-      customer_phone: parsed.data.customer_phone,
-      notes: parsed.data.notes ?? null,
-      total_price: totalPrice,
-      total_duration_minutes: totalDuration,
+      cliente_id: user.id,
+      estabelecimento_id: parsed.data.establishment_id,
+      horario: parsed.data.scheduled_at,
+      nome_cliente: parsed.data.customer_name,
+      telefone_cliente: parsed.data.customer_phone,
+      observacoes: parsed.data.notes ?? null,
+      preco_total: totalPrice ?? 0,
+      duracao_total_minutos: totalDuration,
     })
-    .select('id, scheduled_at, created_at')
+    .select('id, horario, criado_em')
     .single()
 
   if (error) {
+    console.log('[bookAppointment] insert appointment error', error)
     if (error.code === '42501') {
       return {
         error: {
@@ -145,37 +158,28 @@ export async function bookAppointment(formData: FormData): Promise<BookResult> {
     return { error: { _form: [error.message] } }
   }
 
-  const { error: itemError } = await supabase.from('appointment_items').insert(
+  const { error: itemError } = await adminDb.from('itens_agendamento').insert(
     orderedServices.map((service) => ({
-      appointment_id: appointment.id,
-      service_id: service.id,
-      service_name: service.name,
-      price_type: service.price_type,
-      price: service.price,
-      duration_minutes: service.duration_minutes,
+      agendamento_id: appointment.id,
+      servico_id: service.id,
+      nome_servico: service.nome,
+      tipo_preco: service.tipo_preco,
+      preco: service.preco,
+      duracao_minutos: service.duracao_minutos,
     })),
   )
 
-  if (itemError) return { error: { _form: [itemError.message] } }
-
-  await supabase.from('appointment_events').insert({
-    appointment_id: appointment.id,
-    establishment_id: parsed.data.establishment_id,
-    actor_profile_id: user.id,
-    event_type: 'created',
-    status_to: 'pending',
-    amount: totalPrice,
-    notes: parsed.data.notes ?? null,
-  })
-
-  await queueOwnerApprovalRequest(appointment.id)
+  if (itemError) {
+    console.log('[bookAppointment] insert items error', itemError)
+    return { error: { _form: [itemError.message] } }
+  }
 
   revalidatePath('/')
   return {
     success: true,
     appointmentId: appointment.id,
-    scheduled_at: appointment.scheduled_at,
-    created_at: appointment.created_at ?? new Date().toISOString(),
+    scheduled_at: appointment.horario,
+    created_at: appointment.criado_em ?? new Date().toISOString(),
     customer_name: parsed.data.customer_name,
     customer_phone: parsed.data.customer_phone,
   }
@@ -190,40 +194,28 @@ export async function cancelAppointment(appointmentId: string): Promise<ActionRe
   if (!user) redirect('/login')
 
   const { data: appointment, error: fetchError } = await supabase
-    .from('appointments')
-    .select('status, customer_id, establishment_id')
+    .from('agendamentos')
+    .select('status, cliente_id, estabelecimento_id')
     .eq('id', appointmentId)
     .single()
 
   if (fetchError) return { error: { _form: [fetchError.message] } }
   if (!appointment) return { error: { _form: ['Agendamento não encontrado.'] } }
-  if (appointment.customer_id !== user.id) {
+  if (appointment.cliente_id !== user.id) {
     return { error: { _form: ['Este agendamento não pertence a você.'] } }
   }
 
-  if (appointment.status === 'cancelled') {
+  if (appointment.status === 'cancelado') {
     return { error: { _form: ['Este agendamento já foi cancelado.'] } }
   }
 
-  const { error } = await supabase.from('appointments').update({
-    status: 'cancelled',
-    cancelled_reason: 'Cancelado pelo cliente',
-    customer_declined_at: new Date().toISOString(),
-    customer_confirmation_status: 'declined',
+  const { error } = await supabase.from('agendamentos').update({
+    status: 'cancelado',
+    observacoes: 'Cancelado pelo cliente',
   })
   .eq('id', appointmentId)
 
   if (error) return { error: { _form: [error.message] } }
-
-  await supabase.from('appointment_events').insert({
-    appointment_id: appointmentId,
-    establishment_id: appointment.establishment_id,
-    actor_profile_id: user.id,
-    event_type: 'customer_declined',
-    status_from: appointment.status,
-    status_to: 'cancelled',
-    amount: null,
-  })
 
   revalidatePath('/')
   return { success: true }

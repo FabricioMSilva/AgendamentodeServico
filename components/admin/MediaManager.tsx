@@ -44,7 +44,13 @@ async function resizeImage(file: File, width = 1200, height = 900): Promise<Blob
   })
 }
 
-export default function MediaManager({ media }: { media: EstablishmentMedia[] }) {
+export default function MediaManager({
+  media,
+  establishmentId,
+}: {
+  media: EstablishmentMedia[]
+  establishmentId: string
+}) {
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string[]>>({})
@@ -62,6 +68,7 @@ export default function MediaManager({ media }: { media: EstablishmentMedia[] })
       const blob = await resizeImage(file)
       const formData = new FormData()
       formData.set('file', new File([blob], 'gallery.jpg', { type: 'image/jpeg' }))
+      formData.set('establishment_id', establishmentId)
       const result = await uploadMediaImage(formData)
       if (result.error) setMessage(result.error)
       else setMessage('Foto enviada.')
@@ -115,7 +122,7 @@ export default function MediaManager({ media }: { media: EstablishmentMedia[] })
                 <p className="truncate text-xs text-white/60">{item.title || 'Foto da loja'}</p>
                 <button
                   type="button"
-                  onClick={() => deleteMedia(item.id)}
+                  onClick={() => deleteMedia(item.id, establishmentId)}
                   className="rounded-[8px] bg-[#ff8ea8]/12 px-3 py-1.5 text-xs font-medium text-[#ff8ea8]"
                 >
                   Excluir
@@ -127,6 +134,7 @@ export default function MediaManager({ media }: { media: EstablishmentMedia[] })
       </div>
 
       <form onSubmit={handleVideo} className="grid gap-3 rounded-[8px] border border-white/10 bg-white/5 p-4 md:grid-cols-[1fr_1fr_auto]">
+        <input type="hidden" name="establishment_id" value={establishmentId} />
         <input name="url" placeholder="Link YouTube, TikTok ou Vimeo" className={inputClass} />
         <input name="title" placeholder="Título opcional" className={inputClass} />
         <Button type="submit">Anexar vídeo</Button>

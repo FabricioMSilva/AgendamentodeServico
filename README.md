@@ -66,9 +66,7 @@ Notas:
 
 Os arquivos de banco ficam em `supabase/`:
 
-- `supabase/migrations/`: schema incremental, RLS, funcoes, dashboards e ajustes de performance.
-- `supabase/setup.sql`: setup consolidado.
-- `supabase/seed.sql`: dados SQL auxiliares.
+- `supabase/reset_portugues_login.sql`: arquivo unico para resetar e subir a base MVP em portugues.
 - `scripts/seed-demo.mjs`: seed demo usando `SUPABASE_SERVICE_ROLE_KEY`.
 
 Para popular dados demo:

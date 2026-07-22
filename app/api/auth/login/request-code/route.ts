@@ -7,7 +7,7 @@ import {
   getLoginPhoneCandidates,
   hashLoginCode,
   normalizeLoginPhone,
-  toLoginEmail,
+  toLoginAuthPhone,
 } from '@/lib/login'
 
 export const dynamic = 'force-dynamic'
@@ -34,28 +34,19 @@ async function findAccountByPhone(
   phone: string,
 ) {
   const candidates = getLoginPhoneCandidates(phone)
+  const authPhone = toLoginAuthPhone(phone)
 
   const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, phone')
-    .in('phone', candidates)
+    .from('usuarios')
+    .select('id, telefone')
+    .in('telefone', [authPhone, ...candidates])
     .maybeSingle()
 
   if (profile?.id) {
-    return profile
+    return { id: profile.id, phone: profile.telefone ?? phone }
   }
 
-  const email = toLoginEmail(phone)
-  const { data: users } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
-  const user = users.users.find((entry) => {
-    const userPhone = typeof entry.user_metadata?.phone === 'string' ? entry.user_metadata.phone : ''
-    return (
-      entry.email?.toLowerCase() === email.toLowerCase() ||
-      candidates.includes(userPhone.replace(/\D/g, ''))
-    )
-  })
-
-  return user ? { id: user.id, phone } : null
+  return null
 }
 
 export async function POST(request: Request) {
@@ -72,6 +63,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = createAdminClient()
+    const authPhone = toLoginAuthPhone(phone)
     const account = await findAccountByPhone(supabase, phone)
 
     if (!account?.phone) {
@@ -80,14 +72,14 @@ export async function POST(request: Request) {
 
     const code = createLoginCode()
     const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60_000).toISOString()
-    const codeHash = hashLoginCode(phone, code)
+    const codeHash = hashLoginCode(authPhone, code)
 
-    await supabase.from('login_codes').delete().eq('phone', phone)
+    await supabase.from('codigos_login').delete().eq('telefone', authPhone)
 
-    const { error: insertError } = await supabase.from('login_codes').insert({
-      phone,
-      code_hash: codeHash,
-      expires_at: expiresAt,
+    const { error: insertError } = await supabase.from('codigos_login').insert({
+      telefone: authPhone,
+      codigo_hash: codeHash,
+      expira_em: expiresAt,
     })
 
     if (insertError) {
@@ -101,12 +93,12 @@ export async function POST(request: Request) {
     ].join('\n')
 
     const sendResult = await sendWhatsappText({
-      to: normalizeWhatsappPhone(phone),
+      to: normalizeWhatsappPhone(authPhone),
       message,
     })
 
     if (!sendResult.ok) {
-      await supabase.from('login_codes').delete().eq('phone', phone)
+      await supabase.from('codigos_login').delete().eq('telefone', authPhone)
       return NextResponse.json(
         { error: sendResult.error || 'Não consegui enviar o código por WhatsApp.' },
         { status: 500 },

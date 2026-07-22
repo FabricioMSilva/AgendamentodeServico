@@ -26,6 +26,7 @@ type Props = {
     city?: string | null
     state?: string | null
   }
+  errors?: Record<string, string[] | undefined>
 }
 
 export default function AddressFields({
@@ -36,6 +37,7 @@ export default function AddressFields({
   mode = 'full',
   showComplement = true,
   initialValues,
+  errors,
 }: Props) {
   const [zipCode, setZipCode] = useState(initialValues?.zip_code ?? '')
   const [street, setStreet] = useState(initialValues?.street ?? '')
@@ -131,6 +133,7 @@ export default function AddressFields({
             placeholder="00000-000"
             className={inputClass}
           />
+          {errors?.zip_code ? <p className="mt-1 text-xs text-[#ff8ea8]">{errors.zip_code.join(', ')}</p> : null}
         </label>
 
         <div className="flex items-end">
@@ -158,6 +161,7 @@ export default function AddressFields({
                 placeholder="123"
                 className={inputClass}
               />
+              {errors?.number ? <p className="mt-1 text-xs text-[#ff8ea8]">{errors.number.join(', ')}</p> : null}
             </label>
 
             {showComplement ? (
@@ -170,6 +174,7 @@ export default function AddressFields({
                   placeholder="Opcional"
                   className={inputClass}
                 />
+                {errors?.complement ? <p className="mt-1 text-xs text-[#ff8ea8]">{errors.complement.join(', ')}</p> : null}
               </label>
             ) : null}
           </div>
@@ -202,6 +207,7 @@ export default function AddressFields({
               className={inputClass}
               required={required}
             />
+            {errors?.street ? <p className="mt-1 text-xs text-[#ff8ea8]">{errors.street.join(', ')}</p> : null}
           </label>
 
           <label className="block">
@@ -213,6 +219,7 @@ export default function AddressFields({
               placeholder="123"
               className={inputClass}
             />
+            {errors?.number ? <p className="mt-1 text-xs text-[#ff8ea8]">{errors.number.join(', ')}</p> : null}
           </label>
 
           {showComplement ? (
@@ -225,6 +232,7 @@ export default function AddressFields({
                 placeholder="Apto, sala, bloco"
                 className={inputClass}
               />
+              {errors?.complement ? <p className="mt-1 text-xs text-[#ff8ea8]">{errors.complement.join(', ')}</p> : null}
             </label>
           ) : null}
 
@@ -240,6 +248,7 @@ export default function AddressFields({
               className={inputClass}
               required={required}
             />
+            {errors?.neighborhood ? <p className="mt-1 text-xs text-[#ff8ea8]">{errors.neighborhood.join(', ')}</p> : null}
           </label>
 
           <label className="block">
@@ -254,6 +263,7 @@ export default function AddressFields({
               className={inputClass}
               required={required}
             />
+            {errors?.city ? <p className="mt-1 text-xs text-[#ff8ea8]">{errors.city.join(', ')}</p> : null}
           </label>
 
           <label className="block md:col-span-2">
@@ -274,6 +284,7 @@ export default function AddressFields({
                 </option>
               ))}
             </select>
+            {errors?.state ? <p className="mt-1 text-xs text-[#ff8ea8]">{errors.state.join(', ')}</p> : null}
           </label>
 
           {mode === 'compact' ? (

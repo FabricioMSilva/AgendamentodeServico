@@ -138,12 +138,14 @@ interface AppointmentBoardProps {
   pendingApproval: AppointmentWithRelations[]
   confirmed: AppointmentWithRelations[]
   completedServices: AppointmentWithRelations[]
+  establishmentId: string
 }
 
 export default function AppointmentBoard({
   pendingApproval,
   confirmed,
   completedServices,
+  establishmentId,
 }: AppointmentBoardProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -162,12 +164,12 @@ export default function AppointmentBoard({
                   <ActionButton
                     label="Confirmar"
                     variant="success"
-                    onClick={() => confirmAppointment(a.id)}
+                    onClick={() => confirmAppointment(a.id, establishmentId)}
                   />
                   <ActionButton
                     label="Recusar"
                     variant="danger"
-                    onClick={() => finalizeAppointment(a.id, 'cancelled')}
+                    onClick={() => finalizeAppointment(a.id, 'cancelled', establishmentId)}
                   />
                 </>
               }
@@ -194,17 +196,17 @@ export default function AppointmentBoard({
                   <ActionButton
                     label="Concluir"
                     variant="success"
-                    onClick={() => finalizeAppointment(a.id, 'completed')}
+                    onClick={() => finalizeAppointment(a.id, 'completed', establishmentId)}
                   />
                   <ActionButton
                     label="Não Compareceu"
                     variant="danger"
-                    onClick={() => finalizeAppointment(a.id, 'no_show')}
+                    onClick={() => finalizeAppointment(a.id, 'no_show', establishmentId)}
                   />
                   <ActionButton
                     label="Cancelar"
                     variant="danger"
-                    onClick={() => finalizeAppointment(a.id, 'cancelled')}
+                    onClick={() => finalizeAppointment(a.id, 'cancelled', establishmentId)}
                   />
                 </>
               }

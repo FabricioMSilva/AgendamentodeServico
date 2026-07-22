@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Fredoka, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import PwaCleanup from "@/components/PwaCleanup";
+import TopNavigation from "@/components/ui/TopNavigation";
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { isSuperAdmin } from '@/lib/auth'
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-body",
@@ -21,18 +25,78 @@ export const metadata: Metadata = {
     "Marketplace de saúde e beleza com agenda, serviços, pagamento online e notificações.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  let loggedIn = false
+  let userName: string | undefined
+  let userLabel: string | undefined
+  let panelHref: string | undefined
+
+  if (user) {
+    loggedIn = true
+    const { data: profile } = await supabase
+      .from('usuarios')
+      .select('nome, telefone, nivel_acesso, tipo_cadastro, comerciante_status, comerciante_ativo, conta_bloqueada')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    userName = profile?.nome || user.email || 'Minha conta'
+    const superAdmin = isSuperAdmin({ email: user.email, phone: profile?.telefone }) || profile?.nivel_acesso === 'administrador'
+
+    panelHref = superAdmin ? '/sales/dashboard' : '/buscar'
+    userLabel = superAdmin ? 'Admin VIP' : 'Cliente'
+
+    if (profile?.conta_bloqueada) {
+      panelHref = '/conta-bloqueada'
+      userLabel = 'Bloqueado'
+    }
+
+    if (!superAdmin) {
+      const db = createAdminClient()
+      const { data: establishment } = await db
+        .from('estabelecimentos')
+        .select('id, status_aprovacao')
+        .eq('usuario_admin_id', user.id)
+        .order('criado_em', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+
+      if (profile?.tipo_cadastro === 'comerciante' && profile.comerciante_status !== 'aprovado') {
+        panelHref = '/aguardando-aprovacao'
+        userLabel = 'Aguardando'
+      } else if (
+        profile?.comerciante_ativo ||
+        profile?.nivel_acesso === 'profissional' ||
+        establishment?.id
+      ) {
+        panelHref = establishment?.status_aprovacao === 'pendente'
+          ? '/aguardando-aprovacao?tipo=estabelecimento'
+          : establishment?.status_aprovacao === 'aprovado'
+            ? '/admin/dashboard'
+            : '/dono'
+        userLabel = 'Comerciante'
+      }
+    }
+  }
+
   return (
     <html
-      lang="pt-BR"      data-scroll-behavior="smooth"      className={`${plusJakarta.variable} ${fredoka.variable} h-full antialiased`}
+      lang="pt-BR"
+      data-scroll-behavior="smooth"
+      className={`${plusJakarta.variable} ${fredoka.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <PwaCleanup />
-        {children}
+        <TopNavigation loggedIn={loggedIn} userName={userName} userLabel={userLabel} panelHref={panelHref} />
+        <main className="flex-1 pt-16">{children}</main>
       </body>
     </html>
   );

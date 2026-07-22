@@ -9,11 +9,18 @@ import AppointmentBoard from '@/components/admin/AppointmentBoard'
 import BusinessHoursForm from '@/components/admin/BusinessHoursForm'
 import MediaManager from '@/components/admin/MediaManager'
 import ProfileSettingsForm from '@/components/admin/ProfileSettingsForm'
-import ServiceCatalogPicker from '@/components/admin/ServiceCatalogPicker'
 import AppointmentHistoryDashboard from '@/components/admin/AppointmentHistoryDashboard'
 import LogoutButton from '@/components/auth/LogoutButton'
 import Card from '@/components/ui/Card'
-import type { AppointmentEvent, AppointmentStatus, Establishment, EstablishmentMedia, Service, ServiceCatalogItem, ServiceSuggestion } from '@/database.types'
+import DashboardStatCard from '@/components/ui/DashboardStatCard'
+import {
+  mapEstabelecimento,
+  mapMidiaEstabelecimento,
+  toLegacyAppointmentStatus,
+  type AgendamentoPortugues,
+} from '@/lib/supabase/portuguese-schema-adapter'
+import { getServiceCatalog } from '@/lib/services/catalog-server'
+import type { AppointmentEvent, AppointmentStatus, Establishment, Service } from '@/database.types'
 
 export const metadata: Metadata = {
   title: 'Painel do Negócio | IBeleza',
@@ -41,7 +48,7 @@ type AppointmentRow = {
 type DashboardTab = 'agenda' | 'historico' | 'perfil' | 'midia' | 'funcionamento' | 'servicos'
 
 type Props = {
-  searchParams?: Promise<{ tab?: string }>
+  searchParams?: Promise<{ tab?: string; establishment?: string }>
 }
 
 const TABS: { id: DashboardTab; label: string }[] = [
@@ -87,21 +94,32 @@ export default async function AdminDashboard({ searchParams }: Props) {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: establishment } = await supabase
-    .from('establishments')
-    .select('*, services(*)')
-    .eq('admin_id', user.id)
-    .single()
+  const { data: establishments } = await supabase
+    .from('estabelecimentos')
+    .select('*, servicos(*)')
+    .eq('usuario_admin_id', user.id)
+    .eq('status_aprovacao', 'aprovado')
+    .order('criado_em', { ascending: true })
 
-  if (!establishment) {
+  if (!establishments || establishments.length === 0) {
     return (
       <main className="min-h-screen bg-[#1A2033] p-6 text-white">
         <p className="text-sm text-white/60">
-          Nenhum estabelecimento configurado ainda. Entre em contato com o suporte.
+          Nenhum estabelecimento configurado ainda. Cadastre seu primeiro negócio para liberar o painel.
         </p>
+        <Link
+          href="/dono"
+          className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] px-5 text-sm font-semibold text-white transition hover:opacity-90"
+        >
+          Criar estabelecimento
+        </Link>
       </main>
     )
   }
+
+  const selectedEstablishment =
+    establishments.find((item) => item.id === params?.establishment) ?? establishments[0]
+  const selectedQuery = `establishment=${selectedEstablishment.id}`
 
   const historyStart = new Date()
   historyStart.setDate(historyStart.getDate() - 90)
@@ -109,55 +127,45 @@ export default async function AdminDashboard({ searchParams }: Props) {
   const [
     { data: rawAppointments },
     { data: mediaRaw },
-    { data: catalogRaw },
-    { data: suggestionsRaw },
-    { data: eventsRaw },
+    serviceCatalog,
   ] = await Promise.all([
     supabase
-      .from('appointments')
-      .select('id, scheduled_at, status, customer_name, customer_phone, total_price, total_duration_minutes, profiles(name, email), services(name), appointment_items(service_name, price, duration_minutes)')
-      .eq('establishment_id', establishment.id)
-      .gte('scheduled_at', historyStart.toISOString())
-      .order('scheduled_at', { ascending: true })
+      .from('agendamentos')
+      .select('id, horario, status, nome_cliente, telefone_cliente, preco_total, duracao_total_minutos, usuarios(nome, email), itens_agendamento(nome_servico, preco, duracao_minutos)')
+      .eq('estabelecimento_id', selectedEstablishment.id)
+      .gte('horario', historyStart.toISOString())
+      .order('horario', { ascending: true })
       .limit(500),
     supabase
-      .from('establishment_media')
+      .from('midias_estabelecimento')
       .select('*')
-      .eq('establishment_id', establishment.id)
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: true }),
-    supabase
-      .from('service_catalog')
-      .select('*')
-      .eq('business_type', establishment.business_type ?? 'salao_feminino')
-      .eq('is_active', true)
-      .order('category', { ascending: true })
-      .order('name', { ascending: true }),
-    supabase
-      .from('service_suggestions')
-      .select('*')
-      .eq('establishment_id', establishment.id)
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('appointment_events')
-      .select('*')
-      .eq('establishment_id', establishment.id)
-      .order('created_at', { ascending: false })
-      .limit(200),
+      .eq('estabelecimento_id', selectedEstablishment.id)
+      .order('ordem', { ascending: true })
+      .order('criado_em', { ascending: true }),
+    getServiceCatalog(),
   ])
 
+  const est = mapEstabelecimento(selectedEstablishment)
+
   // Estreita os tipos das linhas retornadas pelos joins.
-  const appointments: AppointmentRow[] = (rawAppointments ?? []).map((a) => ({
+  const appointments: AppointmentRow[] = ((rawAppointments ?? []) as AgendamentoPortugues[]).map((a) => ({
     id: a.id,
-    scheduled_at: a.scheduled_at,
-    status: a.status as AppointmentStatus,
-    customer_name: a.customer_name,
-    customer_phone: a.customer_phone,
-    total_price: a.total_price,
-    total_duration_minutes: a.total_duration_minutes,
-    profiles: Array.isArray(a.profiles) ? (a.profiles[0] ?? null) : a.profiles,
-    services: Array.isArray(a.services) ? (a.services[0] ?? null) : a.services,
-    appointment_items: a.appointment_items ?? [],
+    scheduled_at: a.horario,
+    status: toLegacyAppointmentStatus(a.status),
+    customer_name: a.nome_cliente,
+    customer_phone: a.telefone_cliente,
+    total_price: a.preco_total,
+    total_duration_minutes: a.duracao_total_minutos,
+    profiles: (() => {
+      const profile = Array.isArray(a.usuarios) ? (a.usuarios[0] ?? null) : a.usuarios
+      return profile ? { name: profile.nome, email: profile.email ?? '' } : null
+    })(),
+    services: null,
+    appointment_items: (a.itens_agendamento ?? []).map((item) => ({
+      service_name: item.nome_servico,
+      price: item.preco,
+      duration_minutes: item.duracao_minutos,
+    })),
   }))
 
   const pending = appointments.filter((a) => a.status === 'pending')
@@ -168,11 +176,9 @@ export default async function AdminDashboard({ searchParams }: Props) {
     (['completed', 'cancelled', 'no_show'] as AppointmentStatus[]).includes(a.status)
   )
 
-  const services: Service[] = establishment.services ?? []
-  const media = (mediaRaw ?? []) as EstablishmentMedia[]
-  const catalog = (catalogRaw ?? []) as ServiceCatalogItem[]
-  const suggestions = (suggestionsRaw ?? []) as ServiceSuggestion[]
-  const events = (eventsRaw ?? []) as AppointmentEvent[]
+  const services: Service[] = est.services ?? []
+  const media = ((mediaRaw ?? []) as Parameters<typeof mapMidiaEstabelecimento>[0][]).map(mapMidiaEstabelecimento)
+  const events: AppointmentEvent[] = []
   const activeServices = services.filter((service) => service.is_active)
   const now = new Date()
   const upcomingAppointments = appointments.filter(
@@ -192,7 +198,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
   return (
     <main className="min-h-screen bg-[#1A2033] px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        {establishment.is_blocked && (
+        {est.is_blocked && (
           <div className="rounded-[8px] border border-[#ff8ea8]/20 bg-[#ff8ea8]/12 p-4">
             <p className="text-sm font-semibold text-[#ff8ea8]">
               Estabelecimento suspenso
@@ -210,14 +216,14 @@ export default async function AdminDashboard({ searchParams }: Props) {
                 Painel do comerciante
               </p>
               <h1 className="mt-2 text-3xl font-bold leading-tight text-white sm:text-4xl">
-                {establishment.name}
+                {est.name}
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-white/64">
                 <span className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10">
-                  /{establishment.slug}
+                  /{est.slug}
                 </span>
                 <span className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10">
-                  {establishment.is_blocked ? 'Agenda pausada' : 'Agenda ativa'}
+                  {est.is_blocked ? 'Agenda pausada' : 'Agenda ativa'}
                 </span>
                 <span className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10">
                   Aprovações e horários ficam aqui
@@ -227,11 +233,11 @@ export default async function AdminDashboard({ searchParams }: Props) {
 
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <LogoUpload
-                establishmentId={establishment.id}
-                currentLogoUrl={establishment.logo_url}
+                establishmentId={est.id}
+                currentLogoUrl={est.logo_url}
               />
               <Link
-                href={`/${establishment.slug}`}
+                href={`/${est.slug}`}
                 className="inline-flex min-h-11 items-center justify-center rounded-full bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] px-5 text-sm font-semibold text-white transition hover:opacity-90"
               >
                 Ver página pública
@@ -241,19 +247,64 @@ export default async function AdminDashboard({ searchParams }: Props) {
           </div>
         </header>
 
+        <section className="rounded-[8px] border border-white/10 bg-white/5 p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8FF0F4]">
+                Seus estabelecimentos
+              </p>
+              <p className="mt-1 text-sm text-white/60">
+                Escolha qual negócio deseja administrar agora. Você pode ter até 3.
+              </p>
+            </div>
+            <Link
+              href="/dono"
+              className="inline-flex min-h-10 w-full items-center justify-center rounded-full bg-white/8 px-4 text-sm font-semibold text-white transition hover:bg-white/12 sm:w-fit"
+            >
+              Gerenciar negócios
+            </Link>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {establishments.map((item) => {
+              const selected = item.id === selectedEstablishment.id
+              return (
+                <Link
+                  key={item.id}
+                  href={`/admin/dashboard?tab=${activeTab}&establishment=${item.id}`}
+                  className={[
+                    'rounded-[8px] border p-3 transition',
+                    selected
+                      ? 'border-[#8FF0F4]/55 bg-[#8FF0F4]/10'
+                      : 'border-white/10 bg-[#11172B]/50 hover:border-white/20 hover:bg-white/8',
+                  ].join(' ')}
+                >
+                  <p className="truncate text-sm font-semibold text-white">{item.nome}</p>
+                  <p className="mt-1 text-xs text-white/48">/{item.slug}</p>
+                  <p className={['mt-2 text-xs font-semibold', item.bloqueado ? 'text-[#ff8ea8]' : 'text-emerald-100'].join(' ')}>
+                    {item.bloqueado ? 'Pausado' : 'Ativo'}
+                  </p>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+
         <section className="grid gap-3 md:grid-cols-3">
           <Card title="Atalhos rápidos" className="bg-white/5">
             <div className="space-y-2 text-sm text-white/72">
               <p>Gerencie agenda, aprovações, fotos e horários sem sair do painel.</p>
               <div className="flex flex-wrap gap-2 pt-2">
-                <Link href="/admin/dashboard?tab=agenda" className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10 transition hover:bg-white/12">
+                <Link href={`/admin/dashboard?tab=agenda&${selectedQuery}`} className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10 transition hover:bg-white/12">
                   Agenda
                 </Link>
-                <Link href="/admin/dashboard?tab=funcionamento" className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10 transition hover:bg-white/12">
+                <Link href={`/admin/dashboard?tab=funcionamento&${selectedQuery}`} className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10 transition hover:bg-white/12">
                   Horários
                 </Link>
-                <Link href="/admin/dashboard?tab=midia" className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10 transition hover:bg-white/12">
+                <Link href={`/admin/dashboard?tab=midia&${selectedQuery}`} className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10 transition hover:bg-white/12">
                   Fotos
+                </Link>
+                <Link href="/dono" className="rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/10 transition hover:bg-white/12">
+                  Meus negócios
                 </Link>
               </div>
             </div>
@@ -273,17 +324,22 @@ export default async function AdminDashboard({ searchParams }: Props) {
         </section>
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Metric label="Pendentes" value={String(pending.length)} detail="aguardando aprovação" />
-          <Metric label="Hoje" value={String(appointmentsToday.length)} detail="horários futuros" />
-          <Metric label="Serviços ativos" value={String(activeServices.length)} detail={`${services.length} cadastrados`} />
-          <Metric label="Próximo horário" value={formatNextAppointment(nextAppointment)} detail={nextAppointment?.customer_name ?? 'sem cliente na fila'} />
+          <DashboardStatCard title="Pendentes" value={pending.length} detail="aguardando aprovação" className="bg-white/5" />
+          <DashboardStatCard title="Hoje" value={appointmentsToday.length} detail="horários futuros" className="bg-white/5" />
+          <DashboardStatCard title="Serviços ativos" value={activeServices.length} detail={`${services.length} cadastrados`} className="bg-white/5" />
+          <DashboardStatCard
+            title="Próximo horário"
+            value={formatNextAppointment(nextAppointment)}
+            detail={nextAppointment?.customer_name ?? 'sem cliente na fila'}
+            className="bg-white/5"
+          />
         </section>
 
         <nav className="flex gap-2 overflow-x-auto rounded-[8px] bg-white/5 p-1 ring-1 ring-white/10">
           {TABS.map((tab) => (
             <Link
               key={tab.id}
-              href={`/admin/dashboard?tab=${tab.id}`}
+              href={`/admin/dashboard?tab=${tab.id}&${selectedQuery}`}
               className={[
                 'inline-flex min-h-10 shrink-0 items-center justify-center rounded-[8px] px-4 text-sm font-semibold transition',
                 activeTab === tab.id
@@ -304,6 +360,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
                   pendingApproval={pending}
                   confirmed={confirmed}
                   completedServices={completed}
+                  establishmentId={est.id}
                 />
               </Card>
             ) : null}
@@ -316,30 +373,27 @@ export default async function AdminDashboard({ searchParams }: Props) {
 
             {activeTab === 'perfil' ? (
               <Card title="Perfil">
-                <ProfileSettingsForm establishment={establishment as Establishment} />
+                <ProfileSettingsForm establishment={est as Establishment} />
               </Card>
             ) : null}
 
             {activeTab === 'midia' ? (
               <Card title="Mídia">
-                <MediaManager media={media} />
+                <MediaManager media={media} establishmentId={est.id} />
               </Card>
             ) : null}
 
             {activeTab === 'funcionamento' ? (
               <Card title="Funcionamento">
-                <BusinessHoursForm establishment={establishment as Establishment} />
+                <BusinessHoursForm establishment={est as Establishment} />
               </Card>
             ) : null}
 
             {activeTab === 'servicos' ? (
               <Card title="Serviços">
-                <ServiceCatalogPicker catalog={catalog} suggestions={suggestions} />
-                <div className="mt-5 border-t border-white/10 pt-5">
-                  <ServiceForm />
-                </div>
+                <ServiceForm catalog={serviceCatalog} establishmentId={est.id} />
                 <div className="mt-5">
-                  <ServiceList services={services} />
+                  <ServiceList services={services} catalog={serviceCatalog} establishmentId={est.id} />
                 </div>
               </Card>
             ) : null}
@@ -347,8 +401,8 @@ export default async function AdminDashboard({ searchParams }: Props) {
 
           <Card title="Resumo">
             <div className="space-y-3 text-sm">
-              <SummaryRow label="Contato" value={establishment.contact || establishment.whatsapp_phone || 'Não informado'} />
-              <SummaryRow label="Endereço" value={establishment.address || 'Não informado'} />
+              <SummaryRow label="Contato" value={est.contact || est.whatsapp_phone || 'Não informado'} />
+              <SummaryRow label="Endereço" value={est.address || 'Não informado'} />
               <SummaryRow label="Receita confirmada" value={money(confirmedRevenue)} />
               <SummaryRow label="Mídia" value={`${media.filter((item) => item.media_type === 'image').length}/6 fotos`} />
             </div>
@@ -356,24 +410,6 @@ export default async function AdminDashboard({ searchParams }: Props) {
         </div>
       </div>
     </main>
-  )
-}
-
-function Metric({
-  label,
-  value,
-  detail,
-}: {
-  label: string
-  value: string
-  detail: string
-}) {
-  return (
-    <div className="rounded-[8px] bg-white/6 p-4 ring-1 ring-white/10">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
-      <p className="mt-1 text-xs text-white/55">{detail}</p>
-    </div>
   )
 }
 

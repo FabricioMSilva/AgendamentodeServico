@@ -1,28 +1,109 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import CreateEstablishmentForm from '@/components/sales/CreateEstablishmentForm'
 import { setEstablishmentBlocked } from '@/actions/consultant'
 import LogoutButton from '@/components/auth/LogoutButton'
-import Card from '@/components/ui/Card'
+import SalesDashboardInteractive, {
+  type DashboardAppointment,
+  type DashboardEstablishment,
+  type DashboardProfile,
+  type PendingEstablishment,
+  type PendingMerchant,
+} from '@/components/sales/SalesDashboardInteractive'
+import PendingMerchantApprovalForm from '@/components/sales/PendingMerchantApprovalForm'
+import PendingEstablishmentApprovalForm from '@/components/sales/PendingEstablishmentApprovalForm'
+import UserAccountControlForm from '@/components/sales/UserAccountControlForm'
 
 export default async function SalesDashboard() {
   const db = createAdminClient()
   const [
     { data: establishments },
     { count: profileCount },
+    { data: profiles },
     { count: appointmentCount },
+    { data: appointments },
+    { data: pendingMerchants },
+    { data: pendingEstablishments },
   ] = await Promise.all([
     db
-      .from('establishments')
-      .select('id, name, slug, owner_email, is_blocked, admin_id, profiles(name, phone)')
-      .order('created_at', { ascending: false }),
-    db.from('profiles').select('id', { count: 'exact', head: true }),
-    db.from('appointments').select('id', { count: 'exact', head: true }),
+      .from('estabelecimentos')
+      .select('id, nome, slug, email, telefone, bloqueado, usuario_admin_id, usuarios!estabelecimentos_usuario_admin_id_fkey(nome, telefone, email)')
+      .order('criado_em', { ascending: false }),
+    db.from('usuarios').select('id', { count: 'exact', head: true }),
+    db
+      .from('usuarios')
+      .select('id, nome, telefone, email, nivel_acesso, tipo_cadastro, comerciante_status, comerciante_ativo, conta_bloqueada, criado_em')
+      .order('criado_em', { ascending: false })
+      .limit(20),
+    db.from('agendamentos').select('id', { count: 'exact', head: true }),
+    db
+      .from('agendamentos')
+      .select('id, nome_cliente, telefone_cliente, horario, status, preco_total, estabelecimentos(nome, slug)')
+      .order('horario', { ascending: false })
+      .limit(15),
+    db
+      .from('usuarios')
+      .select('id, nome, telefone, email, cnpj, criado_em')
+      .eq('tipo_cadastro', 'comerciante')
+      .eq('comerciante_status', 'pendente')
+      .order('criado_em', { ascending: true }),
+    db
+      .from('estabelecimentos')
+      .select('id, nome, slug, tipo_negocio, telefone, email, criado_em, usuarios!estabelecimentos_usuario_admin_id_fkey(nome, telefone, email)')
+      .eq('status_aprovacao', 'pendente')
+      .order('criado_em', { ascending: true }),
   ])
 
   const total = establishments?.length ?? 0
-  const linked = establishments?.filter((establishment) => establishment.admin_id).length ?? 0
-  const blocked = establishments?.filter((establishment) => establishment.is_blocked).length ?? 0
+  const linked = establishments?.filter((establishment) => establishment.usuario_admin_id).length ?? 0
+  const blocked = establishments?.filter((establishment) => establishment.bloqueado).length ?? 0
   const awaiting = Math.max(total - linked, 0)
+  const dashboardEstablishments: DashboardEstablishment[] = (establishments ?? []).map((establishment) => {
+    const owner = Array.isArray(establishment.usuarios) ? establishment.usuarios[0] : establishment.usuarios
+
+    return {
+      id: establishment.id,
+      nome: establishment.nome,
+      slug: establishment.slug,
+      email: establishment.email,
+      telefone: establishment.telefone,
+      bloqueado: establishment.bloqueado,
+      usuario_admin_id: establishment.usuario_admin_id,
+      ownerName: owner?.nome ?? null,
+      ownerEmail: owner?.email ?? null,
+      ownerPhone: owner?.telefone ?? null,
+    }
+  })
+  const dashboardAppointments: DashboardAppointment[] = (appointments ?? []).map((appointment) => {
+    const establishment = Array.isArray(appointment.estabelecimentos)
+      ? appointment.estabelecimentos[0]
+      : appointment.estabelecimentos
+
+    return {
+      id: appointment.id,
+      nome_cliente: appointment.nome_cliente,
+      telefone_cliente: appointment.telefone_cliente,
+      horario: appointment.horario,
+      status: appointment.status,
+      preco_total: appointment.preco_total,
+      estabelecimentoNome: establishment?.nome ?? null,
+      estabelecimentoSlug: establishment?.slug ?? null,
+    }
+  })
+  const dashboardPendingEstablishments: PendingEstablishment[] = (pendingEstablishments ?? []).map((establishment) => {
+    const owner = Array.isArray(establishment.usuarios) ? establishment.usuarios[0] : establishment.usuarios
+
+    return {
+      id: establishment.id,
+      nome: establishment.nome,
+      slug: establishment.slug,
+      tipo_negocio: establishment.tipo_negocio,
+      telefone: establishment.telefone,
+      email: establishment.email,
+      criado_em: establishment.criado_em,
+      ownerName: owner?.nome ?? null,
+      ownerPhone: owner?.telefone ?? null,
+      ownerEmail: owner?.email ?? null,
+    }
+  })
 
   return (
     <main className="min-h-screen bg-[#1A2033] px-4 py-8 text-white sm:px-6 lg:px-8">
@@ -40,69 +121,48 @@ export default async function SalesDashboard() {
           <LogoutButton redirectTo="/login" />
         </header>
 
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Card title="Negócios" className="bg-white/5">
-            <p className="text-3xl font-semibold">{total}</p>
-            <p className="mt-1 text-sm text-white/60">cadastrados no sistema</p>
-          </Card>
-          <Card title="Cadastros" className="bg-white/5">
-            <p className="text-3xl font-semibold">{profileCount ?? 0}</p>
-            <p className="mt-1 text-sm text-white/60">clientes, donos e perfis</p>
-          </Card>
-          <Card title="Vinculados" className="bg-white/5">
-            <p className="text-3xl font-semibold">{linked}</p>
-            <p className="mt-1 text-sm text-white/60">com dono já liberado</p>
-          </Card>
-          <Card title="Agenda" className="bg-white/5">
-            <p className="text-3xl font-semibold">{appointmentCount ?? 0}</p>
-            <p className="mt-1 text-sm text-white/60">agendamentos registrados</p>
-          </Card>
-          <Card title="Aguardando" className="bg-white/5">
-            <p className="text-3xl font-semibold">{awaiting}</p>
-            <p className="mt-1 text-sm text-white/60">sem primeiro vínculo</p>
-          </Card>
-          <Card title="Pausados" className="bg-white/5">
-            <p className="text-3xl font-semibold">{blocked}</p>
-            <p className="mt-1 text-sm text-white/60">desativados no momento</p>
-          </Card>
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-          <div id="novo-comerciante">
-            <Card title="Novo comerciante" className="bg-white/5">
-              <div className="space-y-4">
-                <p className="text-sm leading-6 text-white/68">
-                  Cadastre aqui o dono do comércio. Depois ele entra pelo acesso liberado e aprova os próprios agendamentos.
-                </p>
-                <CreateEstablishmentForm />
-              </div>
-            </Card>
-          </div>
-
-          <Card title="Atalhos" className="bg-white/5">
-            <div className="space-y-3 text-sm text-white/72">
-              <p>O painel do comerciante cuida de horários, fotos, serviços e aprovações.</p>
-              <a
-                href="/dono"
-                className="block rounded-[8px] bg-white/8 px-4 py-3 ring-1 ring-white/10 transition hover:bg-white/12"
-              >
-                Abrir acesso do comerciante
-              </a>
-              <a
-                href="/admin/dashboard"
-                className="block rounded-[8px] bg-white/8 px-4 py-3 ring-1 ring-white/10 transition hover:bg-white/12"
-              >
-                Ver painel do comerciante
-              </a>
-              <a
-                href="#novo-comerciante"
-                className="block rounded-[8px] bg-white/8 px-4 py-3 ring-1 ring-white/10 transition hover:bg-white/12"
-              >
-                Ir para cadastro
-              </a>
-            </div>
-          </Card>
-        </section>
+        <SalesDashboardInteractive
+          stats={{
+            total,
+            profileCount: profileCount ?? 0,
+            linked,
+            appointmentCount: appointmentCount ?? 0,
+            awaiting,
+            blocked,
+          }}
+          establishments={dashboardEstablishments}
+          profiles={(profiles ?? []) as DashboardProfile[]}
+          appointments={dashboardAppointments}
+          pendingMerchants={(pendingMerchants ?? []) as PendingMerchant[]}
+          pendingEstablishments={dashboardPendingEstablishments}
+          approvalActions={Object.fromEntries(
+            (pendingMerchants ?? []).map((merchant) => [
+              merchant.id,
+              <PendingMerchantApprovalForm key={merchant.id} userId={merchant.id} />,
+            ]),
+          )}
+          establishmentApprovalActions={Object.fromEntries(
+            dashboardPendingEstablishments.map((establishment) => [
+              establishment.id,
+              <PendingEstablishmentApprovalForm key={establishment.id} establishmentId={establishment.id} />,
+            ]),
+          )}
+          accountActions={Object.fromEntries(
+            (profiles ?? []).map((profile) => [
+              profile.id,
+              <UserAccountControlForm
+                key={profile.id}
+                user={{
+                  id: profile.id,
+                  nivel_acesso: profile.nivel_acesso,
+                  tipo_cadastro: profile.tipo_cadastro,
+                  comerciante_status: profile.comerciante_status,
+                  conta_bloqueada: profile.conta_bloqueada ?? false,
+                }}
+              />,
+            ]),
+          )}
+        />
 
         <section>
           <h2 className="mb-4 text-lg font-semibold text-white">Todos os estabelecimentos</h2>
@@ -110,14 +170,15 @@ export default async function SalesDashboard() {
             {establishments?.map((e) => {
               const blockAction = async () => {
                 'use server'
-                await setEstablishmentBlocked(e.id, !e.is_blocked)
+                await setEstablishmentBlocked(e.id, !e.bloqueado)
               }
+              const owner = Array.isArray(e.usuarios) ? e.usuarios[0] : e.usuarios
               return (
                 <div key={e.id} className="flex items-center justify-between gap-4 p-4">
                   <div>
-                    <p className="font-medium text-white">{e.name}</p>
-                    <p className="text-sm text-white/55">/{e.slug} · {e.owner_email}</p>
-                    {e.admin_id ? (
+                    <p className="font-medium text-white">{e.nome}</p>
+                    <p className="text-sm text-white/55">/{e.slug} · {owner?.email ?? e.email ?? 'sem e-mail vinculado'}</p>
+                    {e.usuario_admin_id ? (
                       <span className="text-xs text-emerald-100">Vinculado</span>
                     ) : (
                       <span className="text-xs text-amber-200">Aguardando primeiro acesso</span>
@@ -127,12 +188,12 @@ export default async function SalesDashboard() {
                     <button
                       type="submit"
                       className={`rounded-[8px] px-3 py-1.5 text-sm font-medium transition ${
-                        e.is_blocked
+                        e.bloqueado
                           ? 'bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/15'
                           : 'bg-[#ff8ea8]/12 text-[#ff8ea8] hover:bg-[#ff8ea8]/18'
                       }`}
                     >
-                      {e.is_blocked ? 'Desbloquear' : 'Bloquear'}
+                      {e.bloqueado ? 'Desbloquear' : 'Bloquear'}
                     </button>
                   </form>
                 </div>

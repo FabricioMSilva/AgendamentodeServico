@@ -1,6 +1,0 @@
--- IBeleza demo seed
--- This project seeds demo Auth users and booked appointments through:
---   npm run seed:demo
---
--- The Supabase SQL Editor cannot write to auth.users directly, so this file
--- is intentionally kept as a pointer to the supported seed flow.

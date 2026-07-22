@@ -63,7 +63,7 @@ interface LogoUploadProps {
 }
 
 export default function LogoUpload({
-  establishmentId: _establishmentId,
+  establishmentId,
   currentLogoUrl,
 }: LogoUploadProps) {
   const [uploading, setUploading] = useState(false)
@@ -92,6 +92,7 @@ export default function LogoUpload({
       const formData = new FormData()
       const extension = resized.type === 'image/webp' ? 'webp' : 'png'
       formData.set('file', new File([resized], `logo.${extension}`, { type: resized.type }))
+      formData.set('establishment_id', establishmentId)
 
       const result = await uploadLogo(formData)
 

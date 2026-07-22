@@ -347,17 +347,29 @@ export default function BookingForm({
     setErrors({})
     setSuccess(false)
 
-    const result = await bookAppointment(fd)
+    try {
+      const result = await bookAppointment(fd)
 
-    if (result.error) {
-      setErrors(result.error)
-    } else {
-      setSuccess(true)
-      setDaySlotsOpen(false)
-      setSelectedDay(getNextOpenDay(businessHours))
-      setSelectedTime(undefined)
-      setCart([])
-      router.refresh()
+      if (result.error) {
+        console.error('bookAppointment error:', result.error)
+        if (Object.keys(result.error).length === 0) {
+          setErrors({ _form: ['Erro inesperado ao agendar. Veja o console.'] })
+        } else {
+          setErrors(result.error)
+        }
+      } else {
+        setSuccess(true)
+        setDaySlotsOpen(false)
+        setSelectedDay(getNextOpenDay(businessHours))
+        setSelectedTime(undefined)
+        setCart([])
+        router.refresh()
+      }
+    } catch (err) {
+      // Unexpected exception — surface it for debugging
+      // eslint-disable-next-line no-console
+      console.error('bookAppointment thrown error:', err)
+      setErrors({ _form: ['Erro inesperado ao tentar agendar. Veja o console.'] })
     }
 
     setPending(false)
@@ -474,7 +486,7 @@ export default function BookingForm({
       </section>
 
       <aside className="min-h-0 overflow-y-auto pr-1">
-        <div className="flex items-start justify-between gap-4">
+<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
               Reserva
@@ -489,9 +501,14 @@ export default function BookingForm({
           </div>
         )}
 
-        {errors._form && (
+        {Object.keys(errors).length > 0 && (
           <div className="mt-2 rounded-[8px] border border-[#ff8ea8]/20 bg-[#ff8ea8]/12 p-2 text-xs text-[#ff8ea8]">
-            {errors._form.join(', ')}
+            {Object.entries(errors).map(([field, msgs]) => (
+              <div key={field} className="mb-1">
+                <strong className="inline-block mr-2 text-[11px] uppercase">{field}</strong>
+                <span>{Array.isArray(msgs) ? msgs.join(', ') : String(msgs)}</span>
+              </div>
+            ))}
           </div>
         )}
 
@@ -601,7 +618,7 @@ export default function BookingForm({
               </button>
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div className="rounded-[8px] bg-emerald-400/10 p-3 ring-1 ring-emerald-300/15">
                 <p className="text-xl font-semibold text-emerald-100">{availableSlotCount}</p>
                 <p className="mt-1 text-xs text-emerald-100/70">livres</p>

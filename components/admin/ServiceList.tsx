@@ -3,18 +3,26 @@
 import { deleteService, setServiceActive, updateService } from '@/actions/admin'
 import type { Service } from '@/database.types'
 import Button from '@/components/ui/Button'
+import { getFallbackServiceCatalog, type ServiceCatalogCategory } from '@/lib/services/categories'
 
 interface ServiceListProps {
   services: Service[]
+  catalog?: ServiceCatalogCategory[]
+  establishmentId: string
 }
 
 function money(value: number | null) {
   return value == null ? 'Sob consulta' : `R$ ${Number(value).toFixed(2)}`
 }
 
-export default function ServiceList({ services }: ServiceListProps) {
+export default function ServiceList({
+  services,
+  catalog = getFallbackServiceCatalog(),
+  establishmentId,
+}: ServiceListProps) {
   const inputClass =
     'rounded-[8px] border border-white/10 bg-[#11172B] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25'
+  const categoryOptions = catalog.map((item) => item.category)
 
   if (services.length === 0) {
     return (
@@ -69,6 +77,7 @@ export default function ServiceList({ services }: ServiceListProps) {
             className="mt-4 grid gap-3"
           >
             <input type="hidden" name="id" value={service.id} />
+            <input type="hidden" name="establishment_id" value={establishmentId} />
             <div className="grid gap-3 md:grid-cols-2">
               <input
                 name="name"
@@ -76,11 +85,20 @@ export default function ServiceList({ services }: ServiceListProps) {
                 required
                 className={inputClass}
               />
-              <input
+              <select
                 name="category"
                 defaultValue={service.category}
                 className={inputClass}
-              />
+              >
+                {!categoryOptions.includes(service.category) ? (
+                  <option value={service.category}>{service.category}</option>
+                ) : null}
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
             </div>
             <textarea
               name="description"
@@ -88,7 +106,7 @@ export default function ServiceList({ services }: ServiceListProps) {
               rows={2}
               className={inputClass}
             />
-            <div className="grid gap-3 md:grid-cols-[1fr_120px_120px_140px]">
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-[1fr_120px_120px_140px]">
               <input
                 name="image_url"
                 defaultValue={service.image_url ?? ''}
@@ -126,14 +144,14 @@ export default function ServiceList({ services }: ServiceListProps) {
               </Button>
               <button
                 type="button"
-                onClick={() => setServiceActive(service.id, !service.is_active)}
+                onClick={() => setServiceActive(service.id, !service.is_active, establishmentId)}
                 className="rounded-[8px] border border-white/10 bg-white/8 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/12"
               >
                 {service.is_active ? 'Pausar' : 'Ativar'}
               </button>
               <button
                 type="button"
-                onClick={() => deleteService(service.id)}
+                onClick={() => deleteService(service.id, establishmentId)}
                 className="rounded-[8px] bg-[#ff8ea8]/12 px-3 py-1.5 text-xs font-medium text-[#ff8ea8] transition hover:bg-[#ff8ea8]/18"
               >
                 Remover
