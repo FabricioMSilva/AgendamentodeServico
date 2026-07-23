@@ -1,0 +1,82 @@
+Error [AuthApiError]: Invalid Refresh Token: Refresh Token Not Found
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_not_found'
+}
+Error [AuthApiError]: Invalid Refresh Token: Refresh Token Not Found
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_not_found'
+}
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `/buscar`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+⨯ ./components/admin/BusinessHoursForm.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from C:\Users\Fabri\OneDrive\Desktop\Projetos\AgendamentodeServico\components\admin\BusinessHoursForm.tsx
+    1: O sistema não pode encontrar o arquivo especificado. (os error 2)
+
+Import trace for requested module:
+./components/admin/BusinessHoursForm.tsx
+[browser] ./components/admin/BusinessHoursForm.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from C:\Users\Fabri\OneDrive\Desktop\Projetos\AgendamentodeServico\components\admin\BusinessHoursForm.tsx
+    1: O sistema não pode encontrar o arquivo especificado. (os error 2)
+
+Import trace for requested module:
+./components/admin/BusinessHoursForm.tsx 
+⨯ ./components/admin/BusinessHoursForm.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from C:\Users\Fabri\OneDrive\Desktop\Projetos\AgendamentodeServico\components\admin\BusinessHoursForm.tsx
+    1: O sistema não pode encontrar o arquivo especificado. (os error 2)
+
+Import trace for requested module:
+./components/admin/BusinessHoursForm.tsx
+[browser] ./components/admin/BusinessHoursForm.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from C:\Users\Fabri\OneDrive\Desktop\Projetos\AgendamentodeServico\components\admin\BusinessHoursForm.tsx
+    1: O sistema não pode encontrar o arquivo especificado. (os error 2)
+
+Import trace for requested module:
+./components/admin/BusinessHoursForm.tsx 
+[browser] ./components/admin/BusinessHoursForm.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from C:\Users\Fabri\OneDrive\Desktop\Projetos\AgendamentodeServico\components\admin\BusinessHoursForm.tsx
+    1: O sistema não pode encontrar o arquivo especificado. (os error 2)
+
+Import trace for requested module:
+./components/admin/BusinessHoursForm.tsx 
+[browser] ./components/admin/BusinessHoursForm.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from C:\Users\Fabri\OneDrive\Desktop\Projetos\AgendamentodeServico\components\admin\BusinessHoursForm.tsx
+    1: O sistema não pode encontrar o arquivo especificado. (os error 2)
+
+Import trace for requested module:
+./components/admin/BusinessHoursForm.tsx 
+⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/admin/dashboard'
+}

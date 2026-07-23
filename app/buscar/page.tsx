@@ -7,8 +7,11 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { getNeedInfo, getNeedTerms, type NeedKey } from '@/lib/search/needs'
 import { mapEstabelecimento } from '@/lib/supabase/portuguese-schema-adapter'
 import type { Database, Service } from '@/database.types'
-
-type BusinessHours = Record<string, { open: string; close: string } | null>
+import {
+  generateAvailableSlots,
+  type BusinessHours,
+  type ScheduleException,
+} from '@/lib/schedule/availability'
 
 type ReservedSlot = {
   establishment_id: string
@@ -247,55 +250,16 @@ function parseBusinessHours(value: unknown): BusinessHours {
   return value as BusinessHours
 }
 
-function hasOverlap(
-  start: dayjs.Dayjs,
-  durationMinutes: number,
-  reservedSlots: ReservedSlot[],
-) {
-  const end = start.add(durationMinutes, 'minute')
-  return reservedSlots.some((slot) => {
-    const reservedStart = dayjs(slot.scheduled_at)
-    const reservedEnd = reservedStart.add(slot.total_duration_minutes ?? 30, 'minute')
-    return start.isBefore(reservedEnd) && end.isAfter(reservedStart)
-  })
-}
-
-function generateTimeSlots(
-  date: Date,
-  businessHours: BusinessHours,
-  reservedSlots: ReservedSlot[],
-  totalDurationMinutes: number,
-  slotDurationMinutes = 30,
-) {
-  const dow = dayjs(date).day().toString()
-  const hours = businessHours[dow]
-  if (!hours) return []
-
-  const slots: string[] = []
-  const base = dayjs(date).format('YYYY-MM-DD')
-  let current = dayjs(`${base}T${hours.open}`)
-  const close = dayjs(`${base}T${hours.close}`)
-  const now = dayjs()
-
-  while (!current.add(totalDurationMinutes, 'minute').isAfter(close)) {
-    if (current.isAfter(now) && !hasOverlap(current, totalDurationMinutes, reservedSlots)) {
-      slots.push(current.format('HH:mm'))
-    }
-    current = current.add(slotDurationMinutes, 'minute')
-  }
-
-  return slots
-}
-
 function getNextSlots(
   businessHours: BusinessHours,
+  exceptions: ScheduleException[],
   reservedSlots: ReservedSlot[],
   durationMinutes: number,
   slotStep: number,
 ) {
   for (let offset = 0; offset < 7; offset += 1) {
     const date = dayjs().add(offset, 'day').toDate()
-    const daySlots = generateTimeSlots(date, businessHours, reservedSlots, durationMinutes, slotStep)
+    const daySlots = generateAvailableSlots(date, businessHours, exceptions, reservedSlots, durationMinutes, slotStep)
     if (daySlots.length > 0) {
       return {
         label: offset === 0 ? 'Hoje' : dayjs(date).format('ddd, DD/MM'),
@@ -432,22 +396,31 @@ export default async function SearchPage({
   const candidates = matched.length > 0 ? matched : establishments
 
   const reservedSlots: ReservedSlot[] = []
+  const scheduleExceptions: (ScheduleException & { establishment_id: string })[] = []
   if (candidates.length > 0) {
     const db = createAdminClient()
     const availabilityEnd = new Date()
     availabilityEnd.setDate(availabilityEnd.getDate() + 180)
-    const { data: reservedRaw } = await db
-      .from('agendamentos')
-      .select('estabelecimento_id, horario, duracao_total_minutos')
-      .in(
-        'estabelecimento_id',
-        candidates.map((item) => item.id),
-      )
-      .in('status', ['pendente', 'confirmado', 'em_atendimento'])
-      .gte('horario', new Date().toISOString())
-      .lt('horario', availabilityEnd.toISOString())
-      .order('horario', { ascending: true })
-      .limit(1000)
+    const candidateIds = candidates.map((item) => item.id)
+    const [{ data: reservedRaw }, { data: exceptionsRaw }] = await Promise.all([
+      db
+        .from('agendamentos')
+        .select('estabelecimento_id, horario, duracao_total_minutos')
+        .in('estabelecimento_id', candidateIds)
+        .in('status', ['pendente', 'confirmado', 'em_atendimento'])
+        .gte('horario', new Date().toISOString())
+        .lt('horario', availabilityEnd.toISOString())
+        .order('horario', { ascending: true })
+        .limit(1000),
+      db
+        .from('excecoes_horario_estabelecimento')
+        .select('estabelecimento_id, id, data, tipo, inicio, fim, motivo')
+        .in('estabelecimento_id', candidateIds)
+        .gte('data', new Date().toISOString().slice(0, 10))
+        .lte('data', availabilityEnd.toISOString().slice(0, 10))
+        .order('data', { ascending: true })
+        .limit(1000),
+    ])
 
     reservedSlots.push(
       ...((reservedRaw ?? []) as {
@@ -458,6 +431,26 @@ export default async function SearchPage({
         establishment_id: slot.estabelecimento_id,
         scheduled_at: slot.horario,
         total_duration_minutes: slot.duracao_total_minutos,
+      })),
+    )
+
+    scheduleExceptions.push(
+      ...((exceptionsRaw ?? []) as {
+        estabelecimento_id: string
+        id: string
+        data: string
+        tipo: 'bloqueio' | 'extra' | 'fechado'
+        inicio: string | null
+        fim: string | null
+        motivo: string | null
+      }[]).map((exception) => ({
+        establishment_id: exception.estabelecimento_id,
+        id: exception.id,
+        date: exception.data,
+        type: exception.tipo,
+        start_time: exception.inicio,
+        end_time: exception.fim,
+        reason: exception.motivo,
       })),
     )
   }
@@ -473,6 +466,7 @@ export default async function SearchPage({
     const hours = parseBusinessHours(establishment.business_hours)
     const nextSlots = getNextSlots(
       hours,
+      scheduleExceptions.filter((exception) => exception.establishment_id === establishment.id),
       reservedSlots.filter((slot) => slot.establishment_id === establishment.id),
       Number.isFinite(duration) ? duration : 30,
       slotStep,

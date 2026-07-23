@@ -23,6 +23,7 @@ type MidiaEstabelecimento = {
 
 export type AgendamentoPortugues = {
   id: string
+  codigo: string
   estabelecimento_id: string
   cliente_id: string | null
   nome_cliente: string | null

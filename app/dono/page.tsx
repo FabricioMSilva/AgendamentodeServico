@@ -19,6 +19,7 @@ const MAX_OWNER_ESTABLISHMENTS = 3
 
 type OwnerAppointment = {
   id: string
+  appointment_code: string
   establishment_id: string
   scheduled_at: string
   status: AppointmentStatus
@@ -72,7 +73,7 @@ export default async function OwnerEntryPage() {
     const { data: rawAppointments } = establishmentIds.length > 0
       ? await db
           .from('agendamentos')
-          .select('id, estabelecimento_id, horario, status, nome_cliente, telefone_cliente, preco_total, duracao_total_minutos, usuarios(nome, email), itens_agendamento(nome_servico, preco, duracao_minutos)')
+          .select('id, codigo, estabelecimento_id, horario, status, nome_cliente, telefone_cliente, preco_total, duracao_total_minutos, usuarios(nome, email), itens_agendamento(nome_servico, preco, duracao_minutos)')
           .in('estabelecimento_id', establishmentIds)
           .gte('horario', historyStart.toISOString())
           .order('horario', { ascending: true })
@@ -81,6 +82,7 @@ export default async function OwnerEntryPage() {
 
     const appointments: OwnerAppointment[] = ((rawAppointments ?? []) as AgendamentoPortugues[]).map((appointment) => ({
       id: appointment.id,
+      appointment_code: appointment.codigo,
       establishment_id: appointment.estabelecimento_id,
       scheduled_at: appointment.horario,
       status: toLegacyAppointmentStatus(appointment.status),
@@ -136,14 +138,22 @@ export default async function OwnerEntryPage() {
 
                 return (
                   <div key={establishment.id} className="rounded-[8px] border border-white/10 bg-[#11172B]/45 p-4">
-                    <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <h3 className="font-semibold text-white">{establishment.nome}</h3>
                         <p className="text-sm text-white/48">/{establishment.slug}</p>
                       </div>
-                      <span className="w-fit rounded-full bg-white/8 px-3 py-1 text-xs font-semibold text-white/60">
-                        {establishmentAppointments.length} agendamento{establishmentAppointments.length === 1 ? '' : 's'}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={`/comerciante/horarios?establishment=${establishment.id}`}
+                          className="inline-flex min-h-9 items-center rounded-full bg-[#8FF0F4]/10 px-3 text-xs font-semibold text-[#8FF0F4] ring-1 ring-[#8FF0F4]/20 transition hover:bg-[#8FF0F4]/15"
+                        >
+                          Agenda de trabalho
+                        </Link>
+                        <span className="w-fit rounded-full bg-white/8 px-3 py-1 text-xs font-semibold text-white/60">
+                          {establishmentAppointments.length} agendamento{establishmentAppointments.length === 1 ? '' : 's'}
+                        </span>
+                      </div>
                     </div>
                     <AppointmentBoard
                       pendingApproval={pending}
@@ -212,7 +222,7 @@ export default async function OwnerEntryPage() {
               Entrar com acesso liberado
             </Link>
             <Link
-              href="/admin/dashboard"
+              href="/comerciante/agendamentos"
               className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-white/8 px-5 text-sm font-semibold text-white transition hover:bg-white/12 sm:w-auto"
             >
               Ir para o painel do comerciante

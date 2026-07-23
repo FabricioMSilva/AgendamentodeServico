@@ -63,7 +63,7 @@ export default async function Home() {
       .maybeSingle()
 
     if (establishment?.status_aprovacao === 'aprovado') {
-      redirect('/admin/dashboard')
+      redirect('/comerciante/agendamentos')
     }
 
     if (establishment?.status_aprovacao === 'pendente') {

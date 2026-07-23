@@ -47,7 +47,7 @@ export default async function GlobalUserMenu() {
       panelHref = establishment?.status_aprovacao === 'pendente'
         ? '/aguardando-aprovacao?tipo=estabelecimento'
         : establishment?.status_aprovacao === 'aprovado'
-          ? '/admin/dashboard'
+          ? '/comerciante/agendamentos'
           : '/dono'
       userLabel = 'Comerciante'
     }

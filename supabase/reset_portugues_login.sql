@@ -38,6 +38,8 @@ drop table if exists public.eventos_agendamento cascade;
 drop table if exists public.excecoes_horario_estabelecimento cascade;
 drop table if exists public.funcionarios cascade;
 drop table if exists public.itens_agendamento cascade;
+drop table if exists public.movimentos_agendamento cascade;
+drop table if exists public.tipos_movimento_agendamento cascade;
 drop table if exists public.mensagens_whatsapp cascade;
 drop table if exists public.midias_estabelecimento cascade;
 drop table if exists public.notificacoes cascade;
@@ -49,6 +51,7 @@ drop table if exists public.usuarios cascade;
 
 drop type if exists public.nivel_acesso_usuario cascade;
 drop type if exists public.status_agendamento cascade;
+drop sequence if exists public.agendamento_codigo_seq cascade;
 drop type if exists public.tipo_preco cascade;
 drop type if exists public.status_pagamento cascade;
 drop type if exists public.status_notificacao cascade;
@@ -67,6 +70,28 @@ create type public.status_agendamento as enum (
   'cancelado',
   'nao_compareceu'
 );
+
+create sequence public.agendamento_codigo_seq;
+
+create or replace function public.gerar_codigo_agendamento()
+returns text
+language plpgsql
+as $$
+declare
+  novo_codigo text;
+begin
+  loop
+    novo_codigo := 'IBZ-' || to_char(now(), 'YYYYMMDD') || '-' || lpad(nextval('public.agendamento_codigo_seq')::text, 6, '0');
+    exit when not exists (
+      select 1
+      from public.agendamentos
+      where codigo = novo_codigo
+    );
+  end loop;
+
+  return novo_codigo;
+end;
+$$;
 
 create type public.tipo_preco as enum (
   'fixo',
@@ -153,6 +178,26 @@ create table public.midias_estabelecimento (
   criado_em timestamptz not null default now()
 );
 
+create table public.excecoes_horario_estabelecimento (
+  id uuid primary key default gen_random_uuid(),
+  estabelecimento_id uuid not null references public.estabelecimentos(id) on delete cascade,
+  data date not null,
+  tipo text not null check (tipo in ('bloqueio', 'extra', 'fechado')),
+  inicio time,
+  fim time,
+  motivo text,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  check (
+    tipo = 'fechado'
+    or (
+      inicio is not null
+      and fim is not null
+      and inicio < fim
+    )
+  )
+);
+
 create table public.servicos (
   id uuid primary key default gen_random_uuid(),
   estabelecimento_id uuid not null references public.estabelecimentos(id) on delete cascade,
@@ -170,6 +215,7 @@ create table public.servicos (
 
 create table public.agendamentos (
   id uuid primary key default gen_random_uuid(),
+  codigo text not null default public.gerar_codigo_agendamento(),
   estabelecimento_id uuid not null references public.estabelecimentos(id) on delete cascade,
   cliente_id uuid references public.usuarios(id) on delete set null,
   nome_cliente text,
@@ -193,6 +239,27 @@ create table public.itens_agendamento (
   duracao_minutos integer not null default 60
 );
 
+create table public.tipos_movimento_agendamento (
+  codigo text primary key,
+  descricao text not null,
+  categoria text not null default 'agenda',
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now()
+);
+
+create table public.movimentos_agendamento (
+  id uuid primary key default gen_random_uuid(),
+  agendamento_id uuid not null references public.agendamentos(id) on delete cascade,
+  codigo_agendamento text not null,
+  codigo_movimento text not null references public.tipos_movimento_agendamento(codigo),
+  usuario_id uuid references public.usuarios(id) on delete set null,
+  estabelecimento_id uuid not null references public.estabelecimentos(id) on delete cascade,
+  status_anterior public.status_agendamento,
+  status_novo public.status_agendamento,
+  metadata jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now()
+);
+
 create index usuarios_telefone_idx on public.usuarios (telefone);
 create index usuarios_email_idx on public.usuarios (email);
 create index usuarios_nivel_acesso_idx on public.usuarios (nivel_acesso);
@@ -200,9 +267,15 @@ create index codigos_login_telefone_idx on public.codigos_login (telefone);
 create index codigos_login_expira_em_idx on public.codigos_login (expira_em);
 create index estabelecimentos_slug_idx on public.estabelecimentos (slug);
 create index midias_estabelecimento_idx on public.midias_estabelecimento (estabelecimento_id, ordem);
+create index excecoes_horario_estabelecimento_lookup_idx on public.excecoes_horario_estabelecimento (estabelecimento_id, data);
 create index servicos_estabelecimento_idx on public.servicos (estabelecimento_id, ativo, nome);
 create index agendamentos_estabelecimento_horario_idx on public.agendamentos (estabelecimento_id, horario);
 create index agendamentos_cliente_idx on public.agendamentos (cliente_id);
+create unique index agendamentos_codigo_key on public.agendamentos (codigo);
+create index movimentos_agendamento_agendamento_idx on public.movimentos_agendamento (agendamento_id, criado_em desc);
+create index movimentos_agendamento_estabelecimento_idx on public.movimentos_agendamento (estabelecimento_id, criado_em desc);
+create index movimentos_agendamento_codigo_idx on public.movimentos_agendamento (codigo_agendamento);
+create index movimentos_agendamento_tipo_idx on public.movimentos_agendamento (codigo_movimento, criado_em desc);
 
 create or replace function public.atualizar_atualizado_em()
 returns trigger
@@ -222,6 +295,10 @@ create trigger estabelecimentos_atualizado_em
 before update on public.estabelecimentos
 for each row execute function public.atualizar_atualizado_em();
 
+create trigger excecoes_horario_estabelecimento_atualizado_em
+before update on public.excecoes_horario_estabelecimento
+for each row execute function public.atualizar_atualizado_em();
+
 create trigger servicos_atualizado_em
 before update on public.servicos
 for each row execute function public.atualizar_atualizado_em();
@@ -229,6 +306,109 @@ for each row execute function public.atualizar_atualizado_em();
 create trigger agendamentos_atualizado_em
 before update on public.agendamentos
 for each row execute function public.atualizar_atualizado_em();
+
+insert into public.tipos_movimento_agendamento (codigo, descricao, categoria)
+values
+  ('AGENDAMENTO_CRIADO', 'Cliente criou solicitação de agendamento e enviou para aprovação.', 'agendamento'),
+  ('APROVADO_SALAO', 'Salão aprovou o agendamento.', 'aprovacao'),
+  ('RECUSADO_SALAO', 'Salão recusou o agendamento.', 'aprovacao'),
+  ('CANCELADO_CLIENTE', 'Cliente cancelou o agendamento.', 'cancelamento'),
+  ('CANCELADO_COMERCIANTE', 'Comerciante cancelou o agendamento.', 'cancelamento'),
+  ('CONCLUIDO', 'Atendimento foi concluído.', 'finalizacao'),
+  ('NAO_COMPARECEU', 'Cliente não compareceu ao atendimento.', 'finalizacao'),
+  ('WHATSAPP_ENVIADO', 'Mensagem de WhatsApp foi enviada sobre o agendamento.', 'comunicacao');
+
+create or replace function public.registrar_movimento_agendamento(
+  p_agendamento_id uuid,
+  p_codigo_movimento text,
+  p_usuario_id uuid default auth.uid(),
+  p_status_anterior public.status_agendamento default null,
+  p_status_novo public.status_agendamento default null,
+  p_metadata jsonb default '{}'::jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  agendamento_row record;
+  movimento_id uuid;
+begin
+  select id, codigo, estabelecimento_id
+    into agendamento_row
+  from public.agendamentos
+  where id = p_agendamento_id;
+
+  if not found then
+    raise exception 'Agendamento não encontrado para registrar movimento.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.tipos_movimento_agendamento
+    where codigo = p_codigo_movimento
+      and ativo = true
+  ) then
+    raise exception 'Código de movimento inválido: %', p_codigo_movimento;
+  end if;
+
+  insert into public.movimentos_agendamento (
+    agendamento_id,
+    codigo_agendamento,
+    codigo_movimento,
+    usuario_id,
+    estabelecimento_id,
+    status_anterior,
+    status_novo,
+    metadata
+  )
+  values (
+    agendamento_row.id,
+    agendamento_row.codigo,
+    p_codigo_movimento,
+    p_usuario_id,
+    agendamento_row.estabelecimento_id,
+    p_status_anterior,
+    p_status_novo,
+    coalesce(p_metadata, '{}'::jsonb)
+  )
+  returning id into movimento_id;
+
+  return movimento_id;
+end;
+$$;
+
+create or replace function public.registrar_criacao_agendamento()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  perform public.registrar_movimento_agendamento(
+    new.id,
+    'AGENDAMENTO_CRIADO',
+    new.cliente_id,
+    null,
+    new.status,
+    jsonb_build_object(
+      'origem', 'trigger',
+      'horario', new.horario,
+      'nome_cliente', new.nome_cliente,
+      'telefone_cliente', new.telefone_cliente,
+      'preco_total', new.preco_total,
+      'duracao_total_minutos', new.duracao_total_minutos
+    )
+  );
+
+  return new;
+end;
+$$;
+
+create trigger agendamentos_registrar_criacao
+after insert on public.agendamentos
+for each row execute function public.registrar_criacao_agendamento();
 
 create or replace function public.criar_usuario_por_auth()
 returns trigger
@@ -316,9 +496,12 @@ alter table public.administradores_globais enable row level security;
 alter table public.codigos_login enable row level security;
 alter table public.estabelecimentos enable row level security;
 alter table public.midias_estabelecimento enable row level security;
+alter table public.excecoes_horario_estabelecimento enable row level security;
 alter table public.servicos enable row level security;
 alter table public.agendamentos enable row level security;
 alter table public.itens_agendamento enable row level security;
+alter table public.tipos_movimento_agendamento enable row level security;
+alter table public.movimentos_agendamento enable row level security;
 
 create policy usuarios_select_proprio
   on public.usuarios
@@ -359,6 +542,40 @@ create policy midias_estabelecimento_select_publico
     )
   );
 
+create policy excecoes_horario_select_publico
+  on public.excecoes_horario_estabelecimento
+  for select
+  to anon, authenticated
+  using (
+    exists (
+      select 1
+      from public.estabelecimentos e
+      where e.id = excecoes_horario_estabelecimento.estabelecimento_id
+        and e.bloqueado = false
+    )
+  );
+
+create policy excecoes_horario_comerciante_gerencia
+  on public.excecoes_horario_estabelecimento
+  for all
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.estabelecimentos e
+      where e.id = excecoes_horario_estabelecimento.estabelecimento_id
+        and e.usuario_admin_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1
+      from public.estabelecimentos e
+      where e.id = excecoes_horario_estabelecimento.estabelecimento_id
+        and e.usuario_admin_id = auth.uid()
+    )
+  );
+
 create policy servicos_select_publico
   on public.servicos
   for select
@@ -372,6 +589,40 @@ create policy servicos_select_publico
         and e.bloqueado = false
     )
   );
+
+create policy tipos_movimento_select_autenticado
+  on public.tipos_movimento_agendamento
+  for select
+  to authenticated
+  using (true);
+
+create policy movimentos_select_cliente_ou_comerciante
+  on public.movimentos_agendamento
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.agendamentos a
+      where a.id = movimentos_agendamento.agendamento_id
+        and a.cliente_id = auth.uid()
+    )
+    or exists (
+      select 1
+      from public.estabelecimentos e
+      where e.id = movimentos_agendamento.estabelecimento_id
+        and e.usuario_admin_id = auth.uid()
+    )
+  );
+
+grant execute on function public.registrar_movimento_agendamento(
+  uuid,
+  text,
+  uuid,
+  public.status_agendamento,
+  public.status_agendamento,
+  jsonb
+) to authenticated, service_role;
 
 insert into public.administradores_globais (telefone)
 values ('5524993081222')

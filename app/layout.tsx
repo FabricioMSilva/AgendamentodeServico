@@ -49,6 +49,7 @@ export default async function RootLayout({
   let userLabel: string | undefined
   let panelHref: string | undefined
   let showAddEstablishment = false
+  let merchantMenu = false
 
   if (user) {
     loggedIn = true
@@ -90,9 +91,10 @@ export default async function RootLayout({
         panelHref = establishment?.status_aprovacao === 'pendente'
           ? '/aguardando-aprovacao?tipo=estabelecimento'
           : establishment?.status_aprovacao === 'aprovado'
-            ? '/admin/dashboard'
+            ? '/comerciante/agendamentos'
             : '/dono'
         userLabel = 'Comerciante'
+        merchantMenu = establishment?.status_aprovacao === 'aprovado'
 
         // Check if can add more establishments (max 3)
         const { count: establishmentCount } = await db
@@ -118,7 +120,7 @@ export default async function RootLayout({
         <PwaCleanup />
         <GlobalLoadingOverlay />
         {/* Only render TopNavigation if user is logged in or not on auth routes */}
-        {loggedIn && <TopNavigation loggedIn={loggedIn} userName={userName} userLabel={userLabel} panelHref={panelHref} showAddEstablishment={showAddEstablishment} />}
+        {loggedIn && <TopNavigation loggedIn={loggedIn} userName={userName} userLabel={userLabel} panelHref={panelHref} showAddEstablishment={showAddEstablishment} merchantMenu={merchantMenu} />}
         <main className={`flex-1 ${loggedIn ? 'pt-16' : ''}`}>{children}</main>
       </body>
     </html>

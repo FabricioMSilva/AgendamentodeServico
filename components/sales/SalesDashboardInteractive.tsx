@@ -56,6 +56,7 @@ export type DashboardProfile = {
 
 export type DashboardAppointment = {
   id: string
+  codigo: string
   nome_cliente: string | null
   telefone_cliente: string | null
   horario: string
@@ -502,6 +503,9 @@ function AppointmentList({ appointments, total }: { appointments: DashboardAppoi
           <div key={appointment.id} className="flex flex-col gap-3 border-b border-white/5 p-3">
             <div className="flex-1 min-w-0">
               <p className="font-medium text-white truncate">{appointment.nome_cliente ?? 'Cliente'}</p>
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8FF0F4]">
+                {appointment.codigo}
+              </p>
               <p className="mt-1 text-sm text-white/55 truncate">
                 {appointment.estabelecimentoNome ?? 'Estabelecimento'}
               </p>
@@ -534,6 +538,7 @@ function AppointmentListWithSearch({
   onSearchChange: (term: string) => void
 }) {
   const filtered = appointments.filter((apt) =>
+    apt.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (apt.nome_cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
     (apt.estabelecimentoNome?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
   )
@@ -560,6 +565,9 @@ function AppointmentListWithSearch({
           <div key={appointment.id} className="flex flex-col gap-3 border-b border-white/5 p-3">
             <div className="flex-1 min-w-0">
               <p className="font-medium text-white truncate">{appointment.nome_cliente ?? 'Cliente'}</p>
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8FF0F4]">
+                {appointment.codigo}
+              </p>
               <p className="mt-1 text-sm text-white/55 truncate">
                 {appointment.estabelecimentoNome ?? 'Estabelecimento'}
               </p>

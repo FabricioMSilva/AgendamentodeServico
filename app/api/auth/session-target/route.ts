@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
   if (profile?.comerciante_ativo && profile?.nivel_acesso === 'profissional') {
     if (establishment?.status_aprovacao === 'aprovado') {
-      return NextResponse.json({ target: '/admin/dashboard' })
+      return NextResponse.json({ target: '/comerciante/agendamentos' })
     }
 
     if (establishment?.status_aprovacao === 'pendente') {

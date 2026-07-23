@@ -9,8 +9,8 @@ import BookingForm from '@/components/customer/BookingForm'
 import EstablishmentInfoMenu from '@/components/customer/EstablishmentInfoMenu'
 import { mapEstabelecimento, mapMidiaEstabelecimento } from '@/lib/supabase/portuguese-schema-adapter'
 import type { EstablishmentMedia, Service } from '@/database.types'
+import { normalizeBusinessHours, type BusinessHours, type ScheduleException } from '@/lib/schedule/availability'
 
-type BusinessHours = Record<string, { open: string; close: string } | null>
 type ReservedSlot = {
   scheduled_at: string
   total_duration_minutes: number
@@ -40,12 +40,13 @@ function money(value: number | null) {
 const weekdayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 function formatBusinessHours(hours: BusinessHours) {
+  const normalized = normalizeBusinessHours(hours)
   return weekdayLabels.map((label, index) => {
-    const slot = hours[String(index)]
+    const slots = normalized[String(index)]
     return {
       label,
-      value: slot ? `${slot.open} - ${slot.close}` : 'Fechado',
-      open: Boolean(slot),
+      value: slots.length > 0 ? slots.map((slot) => `${slot.open} - ${slot.close}`).join(' / ') : 'Fechado',
+      open: slots.length > 0,
     }
   })
 }
@@ -89,7 +90,7 @@ export default async function SlugPage({ params }: Props) {
   const db = createAdminClient()
   const availabilityEnd = new Date()
   availabilityEnd.setDate(availabilityEnd.getDate() + 180)
-  const [{ data: reservedSlots }, { data: mediaRaw }] = await Promise.all([
+  const [{ data: reservedSlots }, { data: mediaRaw }, { data: scheduleExceptionsRaw }] = await Promise.all([
     db
       .from('agendamentos')
       .select('horario, duracao_total_minutos, nome_cliente')
@@ -105,6 +106,13 @@ export default async function SlugPage({ params }: Props) {
       .eq('estabelecimento_id', est.id)
       .order('ordem', { ascending: true })
       .order('criado_em', { ascending: true }),
+    db
+      .from('excecoes_horario_estabelecimento')
+      .select('id, data, tipo, inicio, fim, motivo')
+      .eq('estabelecimento_id', est.id)
+      .gte('data', new Date().toISOString().slice(0, 10))
+      .lte('data', availabilityEnd.toISOString().slice(0, 10))
+      .order('data', { ascending: true }),
   ])
 
   const services = (est.services ?? [])
@@ -120,7 +128,22 @@ export default async function SlugPage({ params }: Props) {
     customer_name: slot.nome_cliente,
   }))
   const hours = (est.business_hours as BusinessHours) ?? {}
-  const openDays = Object.values(hours).filter(Boolean).length
+  const scheduleExceptions: ScheduleException[] = ((scheduleExceptionsRaw ?? []) as {
+    id: string
+    data: string
+    tipo: 'bloqueio' | 'extra' | 'fechado'
+    inicio: string | null
+    fim: string | null
+    motivo: string | null
+  }[]).map((exception) => ({
+    id: exception.id,
+    date: exception.data,
+    type: exception.tipo,
+    start_time: exception.inicio,
+    end_time: exception.fim,
+    reason: exception.motivo,
+  }))
+  const openDays = Object.values(normalizeBusinessHours(hours)).filter((ranges) => ranges.length > 0).length
   const initials = getInitials(est.name)
   const gallery = ((mediaRaw ?? []) as Parameters<typeof mapMidiaEstabelecimento>[0][])
     .map(mapMidiaEstabelecimento)
@@ -263,6 +286,7 @@ export default async function SlugPage({ params }: Props) {
               establishmentId={est.id}
               services={services}
               businessHours={hours}
+              scheduleExceptions={scheduleExceptions}
               slotsPerSchedule={est.slots_per_schedule}
               reservedSlots={reserved}
             />

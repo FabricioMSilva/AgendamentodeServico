@@ -458,9 +458,53 @@ export interface Database {
           },
         ]
       }
+      excecoes_horario_estabelecimento: {
+        Row: {
+          id: string
+          estabelecimento_id: string
+          data: string
+          tipo: 'bloqueio' | 'extra' | 'fechado'
+          inicio: string | null
+          fim: string | null
+          motivo: string | null
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id?: string
+          estabelecimento_id: string
+          data: string
+          tipo: 'bloqueio' | 'extra' | 'fechado'
+          inicio?: string | null
+          fim?: string | null
+          motivo?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          estabelecimento_id?: string
+          data?: string
+          tipo?: 'bloqueio' | 'extra' | 'fechado'
+          inicio?: string | null
+          fim?: string | null
+          motivo?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'excecoes_horario_estabelecimento_estabelecimento_id_fkey'
+            columns: ['estabelecimento_id']
+            referencedRelation: 'estabelecimentos'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       agendamentos: {
         Row: {
           id: string
+          codigo: string
           estabelecimento_id: string
           cliente_id: string | null
           nome_cliente: string | null
@@ -475,6 +519,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          codigo?: string
           estabelecimento_id: string
           cliente_id?: string | null
           nome_cliente?: string | null
@@ -489,6 +534,7 @@ export interface Database {
         }
         Update: {
           id?: string
+          codigo?: string
           estabelecimento_id?: string
           cliente_id?: string | null
           nome_cliente?: string | null
@@ -511,6 +557,94 @@ export interface Database {
           {
             foreignKeyName: 'agendamentos_cliente_id_fkey'
             columns: ['cliente_id']
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      tipos_movimento_agendamento: {
+        Row: {
+          codigo: string
+          descricao: string
+          categoria: string
+          ativo: boolean
+          criado_em: string
+        }
+        Insert: {
+          codigo: string
+          descricao: string
+          categoria?: string
+          ativo?: boolean
+          criado_em?: string
+        }
+        Update: {
+          codigo?: string
+          descricao?: string
+          categoria?: string
+          ativo?: boolean
+          criado_em?: string
+        }
+        Relationships: []
+      }
+      movimentos_agendamento: {
+        Row: {
+          id: string
+          agendamento_id: string
+          codigo_agendamento: string
+          codigo_movimento: string
+          usuario_id: string | null
+          estabelecimento_id: string
+          status_anterior: StatusAgendamentoPortugues | null
+          status_novo: StatusAgendamentoPortugues | null
+          metadata: Json
+          criado_em: string
+        }
+        Insert: {
+          id?: string
+          agendamento_id: string
+          codigo_agendamento: string
+          codigo_movimento: string
+          usuario_id?: string | null
+          estabelecimento_id: string
+          status_anterior?: StatusAgendamentoPortugues | null
+          status_novo?: StatusAgendamentoPortugues | null
+          metadata?: Json
+          criado_em?: string
+        }
+        Update: {
+          id?: string
+          agendamento_id?: string
+          codigo_agendamento?: string
+          codigo_movimento?: string
+          usuario_id?: string | null
+          estabelecimento_id?: string
+          status_anterior?: StatusAgendamentoPortugues | null
+          status_novo?: StatusAgendamentoPortugues | null
+          metadata?: Json
+          criado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'movimentos_agendamento_agendamento_id_fkey'
+            columns: ['agendamento_id']
+            referencedRelation: 'agendamentos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'movimentos_agendamento_codigo_movimento_fkey'
+            columns: ['codigo_movimento']
+            referencedRelation: 'tipos_movimento_agendamento'
+            referencedColumns: ['codigo']
+          },
+          {
+            foreignKeyName: 'movimentos_agendamento_estabelecimento_id_fkey'
+            columns: ['estabelecimento_id']
+            referencedRelation: 'estabelecimentos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'movimentos_agendamento_usuario_id_fkey'
+            columns: ['usuario_id']
             referencedRelation: 'usuarios'
             referencedColumns: ['id']
           },
@@ -1409,6 +1543,17 @@ export interface Database {
         Args: { p_establishment_id: string }
         Returns: boolean
       }
+      registrar_movimento_agendamento: {
+        Args: {
+          p_agendamento_id: string
+          p_codigo_movimento: string
+          p_usuario_id?: string | null
+          p_status_anterior?: StatusAgendamentoPortugues | null
+          p_status_novo?: StatusAgendamentoPortugues | null
+          p_metadata?: Json
+        }
+        Returns: string
+      }
     }
     Enums: {
       appointment_status: AppointmentStatus
@@ -1518,3 +1663,4 @@ export type Payment = Tables<'payments'>
 export type AppointmentEvent = Tables<'appointment_events'>
 export type Appointment = Tables<'appointments'>
 export type AppointmentItem = Tables<'appointment_items'>
+export type ScheduleExceptionPortugues = Tables<'excecoes_horario_estabelecimento'>

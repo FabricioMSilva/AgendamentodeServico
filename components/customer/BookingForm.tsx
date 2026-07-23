@@ -6,110 +6,26 @@ import dayjs from 'dayjs'
 import { bookAppointment } from '@/actions/appointments'
 import { createClient } from '@/lib/supabase/client'
 import type { Service } from '@/database.types'
+import {
+  generateAvailableSlots,
+  generateDaySlotStates,
+  getNextOpenDay,
+  getWorkingIntervalsForDate,
+  type BusinessHours,
+  type DaySlotState,
+  type ReservedSlot,
+  type ScheduleException,
+} from '@/lib/schedule/availability'
 
-type BusinessHours = Record<string, { open: string; close: string } | null>
-
-type ReservedSlot = {
-  scheduled_at: string
-  total_duration_minutes: number
-  customer_name: string | null
-}
-
-type DaySlotState = {
-  time: string
-  status: 'available' | 'booked' | 'past'
-  customerName?: string | null
+type ScheduleDay = {
+  date: Date
+  label: string
+  slots: number
+  disabled: boolean
 }
 
 function money(value: number | null) {
   return value == null ? 'Sob consulta' : `R$ ${Number(value).toFixed(2)}`
-}
-
-function findOverlappingSlot(
-  start: dayjs.Dayjs,
-  durationMinutes: number,
-  reservedSlots: ReservedSlot[],
-) {
-  const end = start.add(durationMinutes, 'minute')
-  return reservedSlots.find((slot) => {
-    const reservedStart = dayjs(slot.scheduled_at)
-    const reservedEnd = reservedStart.add(slot.total_duration_minutes ?? 30, 'minute')
-    return start.isBefore(reservedEnd) && end.isAfter(reservedStart)
-  })
-}
-
-function hasOverlap(
-  start: dayjs.Dayjs,
-  durationMinutes: number,
-  reservedSlots: ReservedSlot[],
-) {
-  return Boolean(findOverlappingSlot(start, durationMinutes, reservedSlots))
-}
-
-function generateTimeSlots(
-  date: Date,
-  businessHours: BusinessHours,
-  reservedSlots: ReservedSlot[],
-  totalDurationMinutes: number,
-  slotDurationMinutes = 30,
-): string[] {
-  const dow = dayjs(date).day().toString()
-  const hours = businessHours[dow]
-  if (!hours) return []
-
-  const slots: string[] = []
-  const base = dayjs(date).format('YYYY-MM-DD')
-  let current = dayjs(`${base}T${hours.open}`)
-  const close = dayjs(`${base}T${hours.close}`)
-  const now = dayjs()
-
-  while (!current.add(totalDurationMinutes, 'minute').isAfter(close)) {
-    if (current.isAfter(now) && !hasOverlap(current, totalDurationMinutes, reservedSlots)) {
-      slots.push(current.format('HH:mm'))
-    }
-    current = current.add(slotDurationMinutes, 'minute')
-  }
-  return slots
-}
-
-function generateDaySlotStates(
-  date: Date,
-  businessHours: BusinessHours,
-  reservedSlots: ReservedSlot[],
-  totalDurationMinutes: number,
-  slotDurationMinutes = 30,
-): DaySlotState[] {
-  const dow = dayjs(date).day().toString()
-  const hours = businessHours[dow]
-  if (!hours || totalDurationMinutes <= 0) return []
-
-  const slots: DaySlotState[] = []
-  const base = dayjs(date).format('YYYY-MM-DD')
-  let current = dayjs(`${base}T${hours.open}`)
-  const close = dayjs(`${base}T${hours.close}`)
-  const now = dayjs()
-
-  while (!current.add(totalDurationMinutes, 'minute').isAfter(close)) {
-    const bookedSlot = findOverlappingSlot(current, totalDurationMinutes, reservedSlots)
-    const past = !current.isAfter(now)
-    slots.push({
-      time: current.format('HH:mm'),
-      status: bookedSlot ? 'booked' : past ? 'past' : 'available',
-      customerName: bookedSlot?.customer_name ?? null,
-    })
-    current = current.add(slotDurationMinutes, 'minute')
-  }
-
-  return slots
-}
-
-function getNextOpenDay(businessHours: BusinessHours) {
-  for (let offset = 0; offset < 30; offset += 1) {
-    const day = dayjs().add(offset, 'day')
-    if (businessHours[day.day().toString()]) return day.toDate()
-  }
-
-  return undefined
 }
 
 function getSlotPeriod(time: string) {
@@ -153,12 +69,14 @@ export default function BookingForm({
   establishmentId,
   services,
   businessHours,
+  scheduleExceptions = [],
   slotsPerSchedule,
   reservedSlots,
 }: {
   establishmentId: string
   services: Service[]
   businessHours: BusinessHours
+  scheduleExceptions?: ScheduleException[]
   slotsPerSchedule: number
   reservedSlots: ReservedSlot[]
 }) {
@@ -173,7 +91,7 @@ export default function BookingForm({
   const [category, setCategory] = useState(categories[0] ?? 'Todos')
   const [cart, setCart] = useState<string[]>([])
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(() =>
-    getNextOpenDay(businessHours),
+    getNextOpenDay(businessHours, scheduleExceptions),
   )
   const [selectedTime, setSelectedTime] = useState<string | undefined>()
   const router = useRouter()
@@ -183,7 +101,10 @@ export default function BookingForm({
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [userLoaded, setUserLoaded] = useState(false)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
   const [daySlotsOpen, setDaySlotsOpen] = useState(false)
+  const [approvalNoticeOpen, setApprovalNoticeOpen] = useState(false)
+  const [submittedAppointmentCode, setSubmittedAppointmentCode] = useState<string | null>(null)
 
   const selectedServices = cart
     .map((id) => activeServices.find((service) => service.id === id))
@@ -207,46 +128,46 @@ export default function BookingForm({
         ? generateDaySlotStates(
             selectedDay,
             businessHours,
+            scheduleExceptions,
             reservedSlots,
             totalDuration,
             slotMinutes,
           )
         : [],
-    [businessHours, reservedSlots, selectedDay, slotMinutes, totalDuration],
+    [businessHours, scheduleExceptions, reservedSlots, selectedDay, slotMinutes, totalDuration],
   )
-  const availableSlotCount = daySlotStates.filter((slot) => slot.status === 'available').length
-  const bookedSlotCount = daySlotStates.filter((slot) => slot.status === 'booked').length
-
   const isDayDisabled = (date: Date): boolean => {
-    const dow = dayjs(date).day().toString()
-    return !businessHours[dow] || dayjs(date).isBefore(dayjs(), 'day')
+    return getWorkingIntervalsForDate(date, businessHours, scheduleExceptions).length === 0 || dayjs(date).isBefore(dayjs(), 'day')
   }
 
   const nextAvailableDays = useMemo(() => {
     if (totalDuration === 0) return []
 
-    const days: { date: Date; label: string; slots: number }[] = []
-    for (let offset = 0; offset < 14; offset += 1) {
+    const days: ScheduleDay[] = []
+    for (let offset = 0; offset < 12; offset += 1) {
       const date = dayjs().add(offset, 'day').toDate()
-      if (isDayDisabled(date)) continue
-
-      const slots = generateTimeSlots(
-        date,
-        businessHours,
-        reservedSlots,
-        totalDuration,
-        slotMinutes,
-      )
+      const disabled = isDayDisabled(date)
+      const slots = disabled
+        ? []
+        : generateAvailableSlots(
+            date,
+            businessHours,
+            scheduleExceptions,
+            reservedSlots,
+            totalDuration,
+            slotMinutes,
+          )
 
       days.push({
         date,
         label: offset === 0 ? 'Hoje' : formatShortDay(date),
         slots: slots.length,
+        disabled,
       })
     }
 
     return days
-  }, [businessHours, reservedSlots, slotMinutes, totalDuration])
+  }, [businessHours, scheduleExceptions, reservedSlots, slotMinutes, totalDuration])
 
   const visibleServices =
     category === 'Todos'
@@ -256,7 +177,12 @@ export default function BookingForm({
   const toggleService = (serviceId: string) => {
     setCart((current) => {
       if (current.includes(serviceId)) {
-        return current.filter((id) => id !== serviceId)
+        const next = current.filter((id) => id !== serviceId)
+        if (next.length === 0) {
+          setScheduleOpen(false)
+          setDaySlotsOpen(false)
+        }
+        return next
       }
 
       return [...current, serviceId]
@@ -265,7 +191,20 @@ export default function BookingForm({
     setSuccess(false)
   }
 
+  const openServiceSchedule = (serviceId: string, selected: boolean) => {
+    if (!selected) {
+      setCart((current) => current.includes(serviceId) ? current : [...current, serviceId])
+      setSelectedTime(undefined)
+      setSuccess(false)
+      return
+    }
+
+    setScheduleOpen(true)
+  }
+
   const selectDay = (day: Date | undefined) => {
+    if (!day || isDayDisabled(day)) return
+
     setSelectedDay(day)
     setSelectedTime(undefined)
     setSuccess(false)
@@ -304,6 +243,17 @@ export default function BookingForm({
 
     loadUser()
   }, [])
+
+  useEffect(() => {
+    if (!approvalNoticeOpen) return
+
+    const timeout = window.setTimeout(() => {
+      router.push('/')
+      router.refresh()
+    }, 2600)
+
+    return () => window.clearTimeout(timeout)
+  }, [approvalNoticeOpen, router])
 
   const getScheduledAt = (time: string) => {
     const [hourStr, minuteStr] = time.split(':')
@@ -359,11 +309,13 @@ export default function BookingForm({
         }
       } else {
         setSuccess(true)
+        setScheduleOpen(false)
         setDaySlotsOpen(false)
-        setSelectedDay(getNextOpenDay(businessHours))
+        setSubmittedAppointmentCode('appointmentCode' in result ? result.appointmentCode : null)
+        setApprovalNoticeOpen(true)
+        setSelectedDay(getNextOpenDay(businessHours, scheduleExceptions))
         setSelectedTime(undefined)
         setCart([])
-        router.refresh()
       }
     } catch (err) {
       // Unexpected exception — surface it for debugging
@@ -377,7 +329,7 @@ export default function BookingForm({
 
 
   return (
-    <div className="relative grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="relative grid h-full min-h-0 gap-3">
       <section className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
         <div className="space-y-2">
           <div>
@@ -468,7 +420,7 @@ export default function BookingForm({
                   </p>
                   <button
                     type="button"
-                    onClick={() => toggleService(service.id)}
+                    onClick={() => openServiceSchedule(service.id, selected)}
                     className={`mt-1 inline-flex h-8 items-center rounded-full px-3 text-xs font-semibold ${
                       selected
                         ? 'bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white'
@@ -485,14 +437,26 @@ export default function BookingForm({
         </div>
       </section>
 
-      <aside className="min-h-0 overflow-y-auto pr-1">
-<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      {scheduleOpen ? (
+        <aside className="min-h-0 overflow-y-auto rounded-[8px] bg-[#0f1527] p-4 ring-1 ring-[#FF66B2]/25 shadow-[0_22px_55px_rgba(255,0,127,0.14)]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
               Reserva
             </p>
             <h2 className="mt-0.5 text-lg font-semibold text-white">Data e horário</h2>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setScheduleOpen(false)
+              setDaySlotsOpen(false)
+            }}
+            className="inline-flex h-9 w-9 items-center justify-center self-end rounded-full bg-white/8 text-lg text-white ring-1 ring-white/10 sm:self-auto"
+            aria-label="Fechar reserva"
+          >
+            ×
+          </button>
         </div>
 
         {success && (
@@ -512,35 +476,39 @@ export default function BookingForm({
           </div>
         )}
 
-        <div className="mt-3 rounded-[8px] bg-[#0f1527] p-3 ring-1 ring-white/10">
+        <div className="mt-3 rounded-[8px] bg-white/5 p-3 ring-1 ring-white/10">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8FF0F4]">Dias com agenda</p>
               <p className="mt-1 text-xs text-white/60">Escolha o dia.</p>
             </div>
             <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
-              {totalDuration > 0 ? `${nextAvailableDays.length} dias` : 'selecione serviço'}
+              {totalDuration > 0 ? '12 dias' : 'selecione serviço'}
             </span>
           </div>
 
           {nextAvailableDays.length > 0 ? (
-            <div className="mt-3 flex snap-x gap-2 overflow-x-auto pb-1 pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+            <div className="mt-3 grid grid-cols-3 gap-2">
               {nextAvailableDays.map((day) => {
                 const selected = selectedDay && dayjs(selectedDay).isSame(day.date, 'day')
+                const disabled = day.disabled || day.slots === 0
                 return (
                   <button
                     key={day.date.toISOString()}
                     type="button"
                     onClick={() => selectDay(day.date)}
-                    className={`min-w-[100px] snap-start rounded-[8px] border p-2 text-left transition duration-200 ${
+                    disabled={disabled}
+                    className={`min-h-[64px] rounded-[8px] border px-2 py-1.5 text-left transition duration-200 disabled:cursor-not-allowed ${
                       selected
                         ? 'border-transparent bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white shadow-[0_18px_40px_rgba(255,0,127,0.18)]'
-                        : 'border-white/10 bg-white/5 text-white hover:border-white/20 hover:bg-white/10'
+                        : disabled
+                          ? 'border-white/8 bg-white/4 text-white/42'
+                          : 'border-white/10 bg-white/5 text-white hover:border-white/20 hover:bg-white/10'
                     }`}
                   >
-                    <span className="block text-xs font-semibold capitalize">{day.label}</span>
-                    <span className="mt-1 block text-[11px] text-white/60">
-                      {day.slots > 0 ? `${day.slots} horários` : 'sem vagas'}
+                    <span className="block text-[11px] font-semibold leading-tight capitalize">{day.label}</span>
+                    <span className={`mt-1 block text-[10px] leading-snug ${selected ? 'text-white/75' : 'text-white/60'}`}>
+                      {day.disabled ? 'sem agenda' : day.slots > 0 ? `${day.slots} horários` : 'sem vagas'}
                     </span>
                   </button>
                 )
@@ -588,6 +556,7 @@ export default function BookingForm({
         ) : null}
 
       </aside>
+      ) : null}
 
       {daySlotsOpen && selectedDay && totalDuration > 0 ? (
         <div className="fixed inset-0 z-[70] flex items-end bg-[#070a13]/78 p-3 backdrop-blur-sm sm:items-center sm:justify-center">
@@ -618,28 +587,13 @@ export default function BookingForm({
               </button>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <div className="rounded-[8px] bg-emerald-400/10 p-3 ring-1 ring-emerald-300/15">
-                <p className="text-xl font-semibold text-emerald-100">{availableSlotCount}</p>
-                <p className="mt-1 text-xs text-emerald-100/70">livres</p>
-              </div>
-              <div className="rounded-[8px] bg-[#ff8ea8]/10 p-3 ring-1 ring-[#ff8ea8]/15">
-                <p className="text-xl font-semibold text-[#ffd0dc]">{bookedSlotCount}</p>
-                <p className="mt-1 text-xs text-[#ffd0dc]/70">agendados</p>
-              </div>
-              <div className="rounded-[8px] bg-white/7 p-3 ring-1 ring-white/10">
-                <p className="text-xl font-semibold text-white">{totalDuration}</p>
-                <p className="mt-1 text-xs text-white/58">minutos</p>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-6">
+            <div className="mt-4 space-y-4 sm:space-y-6">
               {Object.entries(groupSlotsByPeriod(daySlotStates)).map(([period, periodSlots]) => (
-                <div key={period} className="space-y-3">
-                  <div className="rounded-[8px] bg-white/8 px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white/70">
+                <div key={period} className="space-y-2.5 sm:space-y-3">
+                  <div className="rounded-[8px] bg-white/8 px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-white/70 sm:px-4 sm:py-3 sm:text-sm">
                     {period}
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
                     {periodSlots.map((slot) => {
                       const available = slot.status === 'available'
                       const selected = selectedTime === slot.time
@@ -647,7 +601,7 @@ export default function BookingForm({
                       return (
                         <div
                           key={slot.time}
-                          className={`rounded-[10px] border p-4 transition ${
+                          className={`rounded-[10px] border p-3 transition sm:p-4 ${
                             available
                               ? 'border-white/10 bg-white/5 hover:border-white/20'
                               : 'border-white/10 bg-white/5 opacity-80'
@@ -655,8 +609,8 @@ export default function BookingForm({
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-lg font-semibold text-white">{slot.time}</p>
-                              <p className="mt-1 text-sm text-white/60">
+                              <p className="text-base font-semibold text-white sm:text-lg">{slot.time}</p>
+                              <p className="mt-0.5 text-xs text-white/60 sm:mt-1 sm:text-sm">
                                 {available
                                   ? 'Livre para agendar'
                                   : slot.status === 'booked'
@@ -672,7 +626,7 @@ export default function BookingForm({
                                 setSelectedTime(slot.time)
                                 await submitBooking(slot.time)
                               }}
-                              className={`min-h-9 rounded-full px-4 text-xs font-semibold transition disabled:cursor-not-allowed ${
+                              className={`min-h-8 rounded-full px-3 text-[11px] font-semibold transition disabled:cursor-not-allowed sm:min-h-9 sm:px-4 sm:text-xs ${
                                 isSubmittingSlot
                                   ? 'bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] text-white'
                                   : available
@@ -697,6 +651,31 @@ export default function BookingForm({
               </p>
             ) : null}
           </section>
+        </div>
+      ) : null}
+
+      {approvalNoticeOpen ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[#070a13]/78 p-5 backdrop-blur-md">
+          <div
+            role="status"
+            aria-live="polite"
+            className="w-full max-w-sm rounded-[8px] bg-[#12182b] p-5 text-center shadow-[0_28px_90px_rgba(0,0,0,0.5)] ring-1 ring-[#8FF0F4]/20"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8FF0F4]">
+              Agendamento enviado
+            </p>
+            <h3 className="mt-3 text-xl font-semibold leading-tight text-white">
+              Seu agendamento foi enviado para aprovação do salão.
+            </h3>
+            {submittedAppointmentCode ? (
+              <p className="mt-3 rounded-[8px] bg-white/8 px-3 py-2 text-sm font-semibold tracking-[0.12em] text-[#8FF0F4] ring-1 ring-white/10">
+                {submittedAppointmentCode}
+              </p>
+            ) : null}
+            <p className="mt-3 text-sm leading-6 text-white/62">
+              Você será levado para a página inicial. O status fica disponível no seu perfil.
+            </p>
+          </div>
         </div>
       ) : null}
     </div>

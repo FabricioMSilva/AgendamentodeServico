@@ -1,0 +1,388 @@
+
+> vip-space@0.1.0 dev
+> next dev --webpack --hostname 127.0.0.1 --port 3000
+
+▲ Next.js 16.2.9 (webpack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env.local
+✓ Ready in 1985ms
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+
+○ Compiling / ...
+ GET / 200 in 9.5s (next.js: 8.0s, proxy.ts: 623ms, application-code: 874ms)
+ GET / 200 in 1174ms (next.js: 21ms, proxy.ts: 626ms, application-code: 527ms)
+○ Compiling /login ...
+ GET /login 200 in 7.3s (next.js: 6.1s, proxy.ts: 37ms, application-code: 1133ms)
+ GET /login 200 in 478ms (next.js: 20ms, proxy.ts: 234ms, application-code: 224ms)
+○ Compiling /api/auth/login/password ...
+ POST /api/auth/login/password 200 in 6.7s (next.js: 4.4s, application-code: 2.3s)
+ POST /api/auth/login/password 200 in 349ms (next.js: 24ms, application-code: 326ms)
+ GET /api/auth/session-target?next=%2F 200 in 1310ms (next.js: 984ms, application-code: 326ms)
+○ Compiling /sales/dashboard ...
+ GET /login 200 in 3.1s (next.js: 79ms, proxy.ts: 1734ms, application-code: 1311ms)
+○ Compiling / ...
+ GET / 200 in 4.8s (next.js: 3.6s, proxy.ts: 76ms, application-code: 1211ms)
+ GET /sales/dashboard 200 in 944ms (next.js: 43ms, proxy.ts: 88ms, application-code: 813ms)
+ GET /buscar 200 in 3.5s (next.js: 3.1s, proxy.ts: 114ms, application-code: 298ms)
+ GET /buscar?need=Cortar+cabelo 200 in 429ms (next.js: 7ms, proxy.ts: 53ms, application-code: 370ms)
+ GET /buscar?need=Cortar%20cabelo 200 in 1411ms (next.js: 5ms, proxy.ts: 144ms, application-code: 1261ms)
+ GET /buscar?need=Cortar%20cabelo 200 in 828ms (next.js: 17ms, proxy.ts: 76ms, application-code: 735ms)
+ GET /studio-carol 200 in 8.0s (next.js: 6.5s, proxy.ts: 111ms, application-code: 1424ms)
+ GET /buscar?need=Cortar+cabelo 200 in 1798ms (next.js: 544ms, proxy.ts: 417ms, application-code: 838ms)
+ GET /studio-carol 200 in 1866ms (next.js: 90ms, proxy.ts: 1450ms, application-code: 326ms)
+ GET /buscar?need=Cortar+cabelo 200 in 1099ms (next.js: 165ms, proxy.ts: 343ms, application-code: 591ms)
+ GET /studio-carol 200 in 1165ms (next.js: 573ms, proxy.ts: 354ms, application-code: 237ms)
+ GET /buscar?need=Cortar+cabelo 200 in 1593ms (next.js: 171ms, proxy.ts: 596ms, application-code: 826ms)
+ GET /studio-carol 200 in 1596ms (next.js: 480ms, proxy.ts: 593ms, application-code: 524ms)
+ GET /studio-carol 200 in 1067ms (next.js: 134ms, proxy.ts: 96ms, application-code: 837ms)
+ GET /buscar?need=Cortar+cabelo 200 in 1016ms (next.js: 37ms, proxy.ts: 467ms, application-code: 512ms)
+[bookAppointment] auth user error null
+[bookAppointment] auth user {
+  id: 'fed29f9a-501d-4142-aee4-fbaeb997dba4',
+  aud: 'authenticated',
+  role: 'authenticated',
+  email: 'usuario-182d443cb551de0c@auth.ibeleza.local',
+  email_confirmed_at: '2026-07-21T16:16:16.725126Z',
+  phone: '',
+  confirmed_at: '2026-07-21T16:16:16.725126Z',
+  last_sign_in_at: '2026-07-23T21:21:19.88238Z',
+  app_metadata: { provider: 'email', providers: [ 'email' ] },
+  user_metadata: {
+    address: 'Rua Arariboia, 275 | Sao Joao - Volta Redonda - RJ',
+    city: 'Volta Redonda',
+    complement: null,
+    email_verified: true,
+    full_name: 'FABRICIO MARTINS DA SILVA',
+    neighborhood: 'Sao Joao',
+    number: '275',
+    phone: '5524993081222',
+    state: 'RJ',
+    street: 'Rua Arariboia',
+    zip_code: '27253240'
+  },
+  identities: [
+    {
+      identity_id: '570c740f-c254-4b80-8057-cdf1bc5ab26a',
+      id: 'fed29f9a-501d-4142-aee4-fbaeb997dba4',
+      user_id: 'fed29f9a-501d-4142-aee4-fbaeb997dba4',
+      identity_data: [Object],
+      provider: 'email',
+      last_sign_in_at: '2026-07-21T16:16:16.721292Z',
+      created_at: '2026-07-21T16:16:16.721342Z',
+      updated_at: '2026-07-21T16:16:16.721342Z',
+      email: 'usuario-182d443cb551de0c@auth.ibeleza.local'
+    }
+  ],
+  created_at: '2026-07-21T16:16:16.719175Z',
+  updated_at: '2026-07-23T21:21:19.911493Z',
+  is_anonymous: false
+}
+ POST /studio-carol 200 in 1470ms (next.js: 18ms, proxy.ts: 114ms, application-code: 1338ms)
+  └─ ƒ bookAppointment({}) in 398ms ..//actions/appointments.ts
+ GET /studio-carol 200 in 382ms (next.js: 11ms, proxy.ts: 87ms, application-code: 284ms)
+ GET /buscar?need=Cortar+cabelo 200 in 1914ms (next.js: 380ms, proxy.ts: 517ms, application-code: 1016ms)
+ GET /studio-carol 200 in 1919ms (next.js: 1112ms, proxy.ts: 520ms, application-code: 287ms)
+ GET /studio-carol 200 in 427ms (next.js: 21ms, proxy.ts: 117ms, application-code: 289ms)
+ GET /buscar?need=Cortar+cabelo 200 in 504ms (next.js: 9ms, proxy.ts: 253ms, application-code: 242ms)
+[bookAppointment] auth user error null
+[bookAppointment] auth user {
+  id: 'fed29f9a-501d-4142-aee4-fbaeb997dba4',
+  aud: 'authenticated',
+  role: 'authenticated',
+  email: 'usuario-182d443cb551de0c@auth.ibeleza.local',
+  email_confirmed_at: '2026-07-21T16:16:16.725126Z',
+  phone: '',
+  confirmed_at: '2026-07-21T16:16:16.725126Z',
+  last_sign_in_at: '2026-07-23T21:21:19.88238Z',
+  app_metadata: { provider: 'email', providers: [ 'email' ] },
+  user_metadata: {
+    address: 'Rua Arariboia, 275 | Sao Joao - Volta Redonda - RJ',
+    city: 'Volta Redonda',
+    complement: null,
+    email_verified: true,
+    full_name: 'FABRICIO MARTINS DA SILVA',
+    neighborhood: 'Sao Joao',
+    number: '275',
+    phone: '5524993081222',
+    state: 'RJ',
+    street: 'Rua Arariboia',
+    zip_code: '27253240'
+  },
+  identities: [
+    {
+      identity_id: '570c740f-c254-4b80-8057-cdf1bc5ab26a',
+      id: 'fed29f9a-501d-4142-aee4-fbaeb997dba4',
+      user_id: 'fed29f9a-501d-4142-aee4-fbaeb997dba4',
+      identity_data: [Object],
+      provider: 'email',
+      last_sign_in_at: '2026-07-21T16:16:16.721292Z',
+      created_at: '2026-07-21T16:16:16.721342Z',
+      updated_at: '2026-07-21T16:16:16.721342Z',
+      email: 'usuario-182d443cb551de0c@auth.ibeleza.local'
+    }
+  ],
+  created_at: '2026-07-21T16:16:16.719175Z',
+  updated_at: '2026-07-23T21:21:19.911493Z',
+  is_anonymous: false
+}
+ POST /studio-carol 200 in 2.8s (next.js: 74ms, proxy.ts: 746ms, application-code: 1960ms)
+  └─ ƒ bookAppointment({}) in 706ms ..//actions/appointments.ts
+○ Compiling / ...
+ GET / 200 in 5.6s (next.js: 4.5s, proxy.ts: 59ms, application-code: 959ms)
+ GET / 200 in 540ms (next.js: 8ms, proxy.ts: 167ms, application-code: 366ms)
+ GET /sales/dashboard 200 in 755ms (next.js: 120ms, proxy.ts: 81ms, application-code: 554ms)
+ GET /sales/dashboard 200 in 543ms (next.js: 5ms, proxy.ts: 185ms, application-code: 353ms)
+ GET /sales/dashboard 200 in 521ms (next.js: 8ms, proxy.ts: 100ms, application-code: 413ms)
+ GET /login?mode=login&next=%2Fbuscar%3Fneed%3DCortar%2Bcabelo 200 in 3.6s (next.js: 521ms, proxy.ts: 39ms, application-code: 3.1s)
+ POST /api/auth/login/password 200 in 4.2s (next.js: 3.5s, application-code: 685ms)
+ GET /api/auth/session-target?next=%2Fbuscar%3Fneed%3DCortar%2Bcabelo 200 in 2.7s (next.js: 2.3s, application-code: 343ms)
+ GET /buscar?need=Cortar+cabelo 200 in 4.4s (next.js: 161ms, proxy.ts: 81ms, application-code: 4.2s)
+○ Compiling /admin/dashboard ...
+ GET /admin/dashboard 200 in 9.3s (next.js: 8.0s, proxy.ts: 109ms, application-code: 1257ms)
+ GET /dono 200 in 3.8s (next.js: 3.1s, proxy.ts: 64ms, application-code: 628ms)
+ GET /dono 200 in 425ms (next.js: 7ms, proxy.ts: 58ms, application-code: 361ms)
+ POST /dono 200 in 801ms (next.js: 8ms, proxy.ts: 162ms, application-code: 632ms)
+  └─ ƒ confirmAppointment("6880f2ca-7d97-452d-bbe3-de39c0fd4a41", "7aa402bc-86a8-4cf3-b473-70346eb4ebf1") in 233ms ..//actions/admin.ts
+ POST /dono 200 in 215ms (next.js: 5ms, proxy.ts: 51ms, application-code: 158ms)
+  └─ ƒ confirmAppointment("9f479ac7-dd3a-40c7-b68e-124e3ada91bd", "7aa402bc-86a8-4cf3-b473-70346eb4ebf1") in 145ms ..//actions/admin.ts
+ POST /dono 200 in 209ms (next.js: 5ms, proxy.ts: 54ms, application-code: 150ms)
+  └─ ƒ confirmAppointment("d709d6c9-1380-41b9-ac60-99e289e72a46", "7aa402bc-86a8-4cf3-b473-70346eb4ebf1") in 135ms ..//actions/admin.ts
+ POST /dono 200 in 562ms (next.js: 5ms, proxy.ts: 65ms, application-code: 492ms)
+  └─ ƒ confirmAppointment("b622088a-37d2-4ed2-a116-eb0c0625f091", "7aa402bc-86a8-4cf3-b473-70346eb4ebf1") in 480ms ..//actions/admin.ts
+ POST /dono 200 in 230ms (next.js: 4ms, proxy.ts: 62ms, application-code: 163ms)
+  └─ ƒ confirmAppointment("f9a8ece3-d1da-41f6-b5c1-196dcfed7e66", "7aa402bc-86a8-4cf3-b473-70346eb4ebf1") in 147ms ..//actions/admin.ts
+ POST /dono 200 in 215ms (next.js: 5ms, proxy.ts: 54ms, application-code: 156ms)
+  └─ ƒ confirmAppointment("5f29f811-dc83-4a50-89d9-704a29a9ef65", "7aa402bc-86a8-4cf3-b473-70346eb4ebf1") in 141ms ..//actions/admin.ts
+ POST /dono 200 in 203ms (next.js: 4ms, proxy.ts: 45ms, application-code: 154ms)
+  └─ ƒ confirmAppointment("51fa9730-e051-465a-b67c-a79c7b076a4e", "7aa402bc-86a8-4cf3-b473-70346eb4ebf1") in 140ms ..//actions/admin.ts
+ GET /dono 200 in 2.8s (next.js: 1466ms, proxy.ts: 529ms, application-code: 834ms)
+ GET /dono 200 in 317ms (next.js: 6ms, proxy.ts: 91ms, application-code: 220ms)
+ GET /dono 200 in 864ms (next.js: 254ms, proxy.ts: 204ms, application-code: 406ms)
+ POST /dono 200 in 1940ms (next.js: 11ms, proxy.ts: 416ms, application-code: 1513ms)
+  └─ ƒ confirmAppointment("51fa9730-e051-465a-b67c-a79c7b076a4e", "7aa402bc-86a8-4cf3-b473-70346eb4ebf1") in 365ms ..//actions/admin.ts
+ GET /dono 200 in 1203ms (next.js: 16ms, proxy.ts: 86ms, application-code: 1100ms)
+ GET /dono 200 in 1407ms (next.js: 14ms, proxy.ts: 840ms, application-code: 553ms)
+ GET /dono 200 in 753ms (next.js: 9ms, proxy.ts: 404ms, application-code: 340ms)
+ GET /dono 200 in 321ms (next.js: 5ms, proxy.ts: 109ms, application-code: 207ms)
+ GET /dono 200 in 424ms (next.js: 12ms, proxy.ts: 92ms, application-code: 320ms)
+ GET /dono 200 in 2.5s (next.js: 730ms, proxy.ts: 114ms, application-code: 1667ms)
+ GET /dono 200 in 703ms (next.js: 119ms, proxy.ts: 292ms, application-code: 293ms)
+ GET /dono 200 in 503ms (next.js: 83ms, proxy.ts: 115ms, application-code: 305ms)
+ GET /dono 200 in 605ms (next.js: 122ms, proxy.ts: 145ms, application-code: 338ms)
+ GET /dono 200 in 565ms (next.js: 93ms, proxy.ts: 129ms, application-code: 343ms)
+ GET /dono 200 in 810ms (next.js: 117ms, proxy.ts: 252ms, application-code: 441ms)
+ GET /dono 200 in 228ms (next.js: 6ms, proxy.ts: 56ms, application-code: 166ms)
+ GET /dono 200 in 327ms (next.js: 6ms, proxy.ts: 133ms, application-code: 188ms)
+ GET /dono 200 in 479ms (next.js: 73ms, proxy.ts: 109ms, application-code: 297ms)
+ GET /dono 200 in 333ms (next.js: 6ms, proxy.ts: 151ms, application-code: 176ms)
+ GET /dono 200 in 891ms (next.js: 410ms, proxy.ts: 135ms, application-code: 346ms)
+ GET /dono 200 in 877ms (next.js: 155ms, proxy.ts: 326ms, application-code: 396ms)
+ GET /dono 200 in 368ms (next.js: 71ms, proxy.ts: 51ms, application-code: 246ms)
+ GET /dono 200 in 424ms (next.js: 6ms, proxy.ts: 261ms, application-code: 157ms)
+ GET /dono 200 in 322ms (next.js: 5ms, proxy.ts: 122ms, application-code: 195ms)
+ GET /dono 200 in 796ms (next.js: 13ms, proxy.ts: 540ms, application-code: 243ms)
+ GET /dono 200 in 263ms (next.js: 4ms, proxy.ts: 67ms, application-code: 192ms)
+ GET /dono 200 in 279ms (next.js: 4ms, proxy.ts: 110ms, application-code: 165ms)
+ GET /dono 200 in 265ms (next.js: 6ms, proxy.ts: 108ms, application-code: 152ms)
+ GET /dono 200 in 852ms (next.js: 7ms, proxy.ts: 449ms, application-code: 396ms)
+ GET /dono 200 in 852ms (next.js: 13ms, proxy.ts: 586ms, application-code: 253ms)
+ GET /dono 200 in 2.6s (next.js: 52ms, proxy.ts: 251ms, application-code: 2.3s)
+ GET /login?mode=login&next=%2Fbuscar%3Fneed%3DCortar%2Bcabelo 200 in 629ms (next.js: 321ms, proxy.ts: 15ms, application-code: 293ms)
+ GET /login?mode=login&next=%2Fbuscar%3Fneed%3DCortar%2Bcabelo 200 in 350ms (next.js: 13ms, proxy.ts: 44ms, application-code: 293ms)
+ GET /login?mode=login&next=%2Fbuscar%3Fneed%3DCortar%2Bcabelo 200 in 960ms (next.js: 28ms, proxy.ts: 97ms, application-code: 834ms)
+ GET /login?mode=login&next=%2Fbuscar 200 in 613ms (next.js: 27ms, proxy.ts: 35ms, application-code: 550ms)
+○ Compiling / ...
+ GET / 200 in 14.4s (next.js: 12.9s, proxy.ts: 846ms, application-code: 637ms)
+ GET /login 200 in 678ms (next.js: 95ms, proxy.ts: 21ms, application-code: 562ms)
+○ Compiling /api/address/cep/[cep] ...
+ GET /api/address/cep/27211555 200 in 25.4s (next.js: 24.1s, application-code: 1286ms)
+ GET /api/address/cep/27211555 200 in 2.1s (next.js: 18ms, application-code: 2.1s)
+○ Compiling /api/auth/register ...
+ POST /api/auth/register 200 in 6.3s (next.js: 4.9s, application-code: 1387ms)
+ GET /api/auth/session-target?next=%2F 200 in 2.9s (next.js: 2.6s, application-code: 301ms)
+○ Compiling / ...
+ GET /login 200 in 13.4s (next.js: 8.5s, proxy.ts: 1646ms, application-code: 3.2s)
+ GET / 200 in 1059ms (next.js: 13ms, proxy.ts: 640ms, application-code: 406ms)
+ GET /buscar 200 in 857ms (next.js: 128ms, proxy.ts: 110ms, application-code: 619ms)
+ GET /buscar?need=Cortar+cabelo 200 in 900ms (next.js: 11ms, proxy.ts: 133ms, application-code: 756ms)
+ GET /studio-carol 200 in 761ms (next.js: 93ms, proxy.ts: 92ms, application-code: 576ms)
+[bookAppointment] auth user error null
+[bookAppointment] auth user {
+  id: '79644f48-4d6e-40d4-a5bf-7eedf8dec43e',
+  aud: 'authenticated',
+  role: 'authenticated',
+  email: 'usuario-0829df630cd5773d@auth.ibeleza.local',
+  email_confirmed_at: '2026-07-23T22:23:35.458417Z',
+  phone: '',
+  confirmed_at: '2026-07-23T22:23:35.458417Z',
+  last_sign_in_at: '2026-07-23T22:23:35.894858Z',
+  app_metadata: { provider: 'email', providers: [ 'email' ] },
+  user_metadata: {
+    address: '33',
+    city: null,
+    complement: null,
+    email_verified: true,
+    full_name: 'FABIANO MARTINS',
+    neighborhood: null,
+    number: '33',
+    phone: '5524992917418',
+    state: null,
+    street: null,
+    zip_code: '27211555'
+  },
+  identities: [
+    {
+      identity_id: '53dfb05e-8fca-4ea3-b0a6-55599978ff86',
+      id: '79644f48-4d6e-40d4-a5bf-7eedf8dec43e',
+      user_id: '79644f48-4d6e-40d4-a5bf-7eedf8dec43e',
+      identity_data: [Object],
+      provider: 'email',
+      last_sign_in_at: '2026-07-23T22:23:35.450466Z',
+      created_at: '2026-07-23T22:23:35.450557Z',
+      updated_at: '2026-07-23T22:23:35.450557Z',
+      email: 'usuario-0829df630cd5773d@auth.ibeleza.local'
+    }
+  ],
+  created_at: '2026-07-23T22:23:35.399094Z',
+  updated_at: '2026-07-23T22:23:35.906423Z',
+  is_anonymous: false
+}
+ POST /studio-carol 200 in 2.2s (next.js: 51ms, proxy.ts: 220ms, application-code: 1926ms)
+  └─ ƒ bookAppointment({}) in 360ms ..//actions/appointments.ts
+ GET / 200 in 2.1s (next.js: 616ms, proxy.ts: 53ms, application-code: 1470ms)
+ GET / 200 in 716ms (next.js: 6ms, proxy.ts: 56ms, application-code: 653ms)
+ GET /buscar 200 in 132ms (next.js: 6ms, proxy.ts: 52ms, application-code: 73ms)
+ GET /buscar 200 in 135ms (next.js: 5ms, proxy.ts: 62ms, application-code: 67ms)
+ GET /login 200 in 750ms (next.js: 22ms, proxy.ts: 46ms, application-code: 681ms)
+○ Compiling /api/auth/login/password ...
+ POST /api/auth/login/password 200 in 16.9s (next.js: 16.1s, application-code: 844ms)
+ GET /api/auth/session-target?next=%2F 200 in 1798ms (next.js: 1355ms, application-code: 443ms)
+ GET / 200 in 4.0s (next.js: 1471ms, proxy.ts: 60ms, application-code: 2.5s)
+ GET /buscar 200 in 756ms (next.js: 73ms, proxy.ts: 86ms, application-code: 597ms)
+○ Compiling /admin/dashboard ...
+ GET /admin/dashboard 200 in 15.8s (next.js: 10.1s, proxy.ts: 112ms, application-code: 5.5s)
+ GET /admin/dashboard 200 in 5.2s (next.js: 1093ms, proxy.ts: 2.6s, application-code: 1512ms)
+ GET /dono 200 in 550ms (next.js: 87ms, proxy.ts: 66ms, application-code: 397ms)
+ GET /dono 200 in 434ms (next.js: 6ms, proxy.ts: 77ms, application-code: 351ms)
+ POST /dono 200 in 2.7s (next.js: 7ms, proxy.ts: 92ms, application-code: 2.6s)
+  └─ ƒ confirmAppointment("ae926db0-abbe-4bd0-b8c9-691727c92cee", "7aa402bc-86a8-4cf3-b473-70346eb4ebf1") in 829ms ..//actions/admin.ts
+ GET /dono 200 in 1846ms (next.js: 8ms, proxy.ts: 218ms, application-code: 1619ms)
+ GET /dono 200 in 3.7s (next.js: 68ms, proxy.ts: 551ms, application-code: 3.1s)
+ POST /dono 200 in 2.9s (next.js: 19ms, proxy.ts: 733ms, application-code: 2.2s)
+  └─ ƒ finalizeAppointment("51fa9730-e051-465a-b67c-a79c7b076a4e", "completed", "7aa402bc-86a8-4cf3-b473-70346eb4ebf1") in 925ms ..//actions/admin.ts
+ GET /dono 200 in 1114ms (next.js: 8ms, proxy.ts: 143ms, application-code: 963ms)
+ GET /dono 200 in 2.4s (next.js: 1122ms, proxy.ts: 634ms, application-code: 687ms)
+ GET /dono 200 in 654ms (next.js: 5ms, proxy.ts: 82ms, application-code: 567ms)
+ GET /dono 200 in 396ms (next.js: 5ms, proxy.ts: 10ms, application-code: 380ms)
+ GET /dono 200 in 2.2s (next.js: 335ms, proxy.ts: 404ms, application-code: 1433ms)
+ GET /dono 200 in 375ms (next.js: 6ms, proxy.ts: 79ms, application-code: 291ms)
+ POST /dono 200 in 2.4s (next.js: 16ms, proxy.ts: 595ms, application-code: 1834ms)
+  └─ ƒ refuseAppointment("b622088a-37d2-4ed2-a116-eb0c0625f091", "7aa402bc-86a8-4cf3-b473-70346eb4ebf1") in 620ms ..//actions/admin.ts
+ GET /dono 200 in 633ms (next.js: 7ms, proxy.ts: 84ms, application-code: 542ms)
+○ Compiling /admin/dashboard ...
+ GET /admin/dashboard 200 in 11.4s (next.js: 8.3s, proxy.ts: 171ms, application-code: 2.9s)
+ GET /dono 200 in 702ms (next.js: 70ms, proxy.ts: 116ms, application-code: 516ms)
+ GET /dono 200 in 539ms (next.js: 5ms, proxy.ts: 102ms, application-code: 432ms)
+ GET /dono 200 in 1593ms (next.js: 10ms, proxy.ts: 1030ms, application-code: 553ms)
+ GET /dono 200 in 246ms (next.js: 4ms, proxy.ts: 51ms, application-code: 191ms)
+ GET /dono 200 in 508ms (next.js: 6ms, proxy.ts: 59ms, application-code: 443ms)
+ GET /dono 200 in 1184ms (next.js: 7ms, proxy.ts: 86ms, application-code: 1090ms)
+ GET /dono 200 in 1443ms (next.js: 420ms, proxy.ts: 439ms, application-code: 584ms)
+ GET /dono 200 in 741ms (next.js: 10ms, proxy.ts: 400ms, application-code: 331ms)
+ GET /dono 200 in 310ms (next.js: 5ms, proxy.ts: 61ms, application-code: 244ms)
+ GET /dono 200 in 282ms (next.js: 4ms, proxy.ts: 77ms, application-code: 201ms)
+ GET /dono 200 in 293ms (next.js: 6ms, proxy.ts: 110ms, application-code: 178ms)
+ GET /dono 200 in 235ms (next.js: 6ms, proxy.ts: 55ms, application-code: 174ms)
+ GET /dono 200 in 345ms (next.js: 5ms, proxy.ts: 119ms, application-code: 221ms)
+ GET /dono 200 in 334ms (next.js: 5ms, proxy.ts: 88ms, application-code: 241ms)
+ GET /dono 200 in 836ms (next.js: 148ms, proxy.ts: 252ms, application-code: 435ms)
+ GET /dono 200 in 330ms (next.js: 7ms, proxy.ts: 64ms, application-code: 259ms)
+ GET /dono 200 in 2.3s (next.js: 699ms, proxy.ts: 397ms, application-code: 1189ms)
+ GET /dono 200 in 1207ms (next.js: 60ms, proxy.ts: 699ms, application-code: 448ms)
+ GET /dono 200 in 638ms (next.js: 8ms, proxy.ts: 61ms, application-code: 569ms)
+ GET /dono 200 in 1341ms (next.js: 8ms, proxy.ts: 55ms, application-code: 1278ms)
+ GET /dono 200 in 1460ms (next.js: 40ms, proxy.ts: 420ms, application-code: 1000ms)
+ GET /dono 200 in 4.8s (next.js: 8ms, proxy.ts: 61ms, application-code: 4.7s)
+ GET /dono 200 in 2.6s (next.js: 729ms, proxy.ts: 950ms, application-code: 950ms)
+ GET /dono 200 in 481ms (next.js: 8ms, proxy.ts: 74ms, application-code: 400ms)
+ GET /dono 200 in 923ms (next.js: 174ms, proxy.ts: 187ms, application-code: 562ms)
+ GET /dono 200 in 520ms (next.js: 15ms, proxy.ts: 94ms, application-code: 411ms)
+ GET /dono 200 in 10.9s (next.js: 2.2s, proxy.ts: 5.8s, application-code: 2.9s)
+ GET /dono 200 in 486ms (next.js: 21ms, proxy.ts: 155ms, application-code: 310ms)
+ GET /dono 200 in 695ms (next.js: 137ms, proxy.ts: 168ms, application-code: 391ms)
+ GET /dono 200 in 351ms (next.js: 13ms, proxy.ts: 58ms, application-code: 280ms)
+ GET /dono 200 in 1184ms (next.js: 399ms, proxy.ts: 155ms, application-code: 630ms)
+ GET /dono 200 in 357ms (next.js: 8ms, proxy.ts: 58ms, application-code: 291ms)
+ GET /dono 200 in 350ms (next.js: 7ms, proxy.ts: 172ms, application-code: 172ms)
+ GET /dono 200 in 292ms (next.js: 9ms, proxy.ts: 65ms, application-code: 217ms)
+ GET /dono 200 in 250ms (next.js: 6ms, proxy.ts: 57ms, application-code: 188ms)
+ GET /dono 200 in 752ms (next.js: 5ms, proxy.ts: 60ms, application-code: 687ms)
+ GET /dono 200 in 4.4s (next.js: 1473ms, proxy.ts: 1679ms, application-code: 1207ms)
+ GET /dono 200 in 683ms (next.js: 10ms, proxy.ts: 137ms, application-code: 536ms)
+ GET /buscar 200 in 1034ms (next.js: 195ms, proxy.ts: 439ms, application-code: 400ms)
+○ Compiling /perfil ...
+ GET /perfil 200 in 26.6s (next.js: 24.7s, proxy.ts: 137ms, application-code: 1780ms)
+ GET /dono 200 in 1377ms (next.js: 120ms, proxy.ts: 230ms, application-code: 1027ms)
+ GET /perfil 200 in 1180ms (next.js: 16ms, proxy.ts: 499ms, application-code: 665ms)
+○ Compiling /admin/dashboard ...
+ GET /admin/dashboard 200 in 41s (next.js: 20.3s, proxy.ts: 838ms, application-code: 20.1s)
+ GET /dono 200 in 18.3s (next.js: 1958ms, proxy.ts: 4.9s, application-code: 11.5s)
+ GET /admin/dashboard 200 in 17.2s (next.js: 2.1s, proxy.ts: 13.6s, application-code: 1562ms)
+ GET /dono 200 in 1828ms (next.js: 186ms, proxy.ts: 294ms, application-code: 1349ms)
+ GET /admin/dashboard 200 in 1953ms (next.js: 31ms, proxy.ts: 351ms, application-code: 1571ms)
+ GET /dono 200 in 522ms (next.js: 6ms, proxy.ts: 125ms, application-code: 391ms)
+ GET /dono 200 in 809ms (next.js: 9ms, proxy.ts: 50ms, application-code: 749ms)
+ GET /dono 200 in 2.5s (next.js: 715ms, proxy.ts: 544ms, application-code: 1221ms)
+ GET /dono 200 in 953ms (next.js: 11ms, proxy.ts: 100ms, application-code: 842ms)
+○ Compiling /admin/dashboard ...
+ GET /dono 200 in 4.6s (next.js: 143ms, proxy.ts: 1012ms, application-code: 3.4s)
+ GET /admin/dashboard 200 in 16.7s (next.js: 8.7s, proxy.ts: 1600ms, application-code: 6.4s)
+○ Compiling /_error ...
+ GET /admin/dashboard 500 in 60s (next.js: 56s, proxy.ts: 1531ms, application-code: 2.0s)
+ GET /dono 200 in 7.7s (next.js: 1101ms, proxy.ts: 2.1s, application-code: 4.6s)
+ GET /admin/dashboard?tab=funcionamento&establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 2.7s (next.js: 621ms, proxy.ts: 408ms, application-code: 1713ms)
+ GET /dono 200 in 1488ms (next.js: 8ms, proxy.ts: 73ms, application-code: 1408ms)
+ GET /dono 200 in 628ms (next.js: 7ms, proxy.ts: 108ms, application-code: 514ms)
+ GET /dono 200 in 1256ms (next.js: 20ms, proxy.ts: 614ms, application-code: 622ms)
+ GET /dono 200 in 360ms (next.js: 7ms, proxy.ts: 83ms, application-code: 270ms)
+ GET /dono 200 in 598ms (next.js: 4ms, proxy.ts: 294ms, application-code: 300ms)
+ GET /dono 200 in 572ms (next.js: 9ms, proxy.ts: 243ms, application-code: 319ms)
+ GET /dono 200 in 1168ms (next.js: 90ms, proxy.ts: 311ms, application-code: 766ms)
+ GET /dono 200 in 869ms (next.js: 8ms, proxy.ts: 343ms, application-code: 518ms)
+ GET /dono 200 in 1345ms (next.js: 690ms, proxy.ts: 69ms, application-code: 585ms)
+ GET /dono 200 in 4.2s (next.js: 3.2s, proxy.ts: 437ms, application-code: 576ms)
+ GET /dono 200 in 1146ms (next.js: 37ms, proxy.ts: 161ms, application-code: 948ms)
+ GET /dono 200 in 228ms (next.js: 5ms, proxy.ts: 67ms, application-code: 156ms)
+ GET /dono 200 in 482ms (next.js: 8ms, proxy.ts: 89ms, application-code: 386ms)
+ GET /dono 200 in 243ms (next.js: 5ms, proxy.ts: 60ms, application-code: 178ms)
+ GET /dono 200 in 207ms (next.js: 5ms, proxy.ts: 53ms, application-code: 149ms)
+ GET /dono 200 in 3.4s (next.js: 1721ms, proxy.ts: 598ms, application-code: 1052ms)
+ GET /dono 200 in 381ms (next.js: 9ms, proxy.ts: 60ms, application-code: 312ms)
+ GET /dono 200 in 661ms (next.js: 153ms, proxy.ts: 144ms, application-code: 364ms)
+ GET /dono 200 in 745ms (next.js: 8ms, proxy.ts: 299ms, application-code: 438ms)
+ GET /dono 200 in 1053ms (next.js: 23ms, proxy.ts: 575ms, application-code: 455ms)
+ GET /dono 200 in 1743ms (next.js: 27ms, proxy.ts: 197ms, application-code: 1519ms)
+○ Compiling /comerciante/agendamentos ...
+ GET /comerciante/agendamentos 200 in 23.2s (next.js: 20.8s, proxy.ts: 90ms, application-code: 2.3s)
+ GET /comerciante/agendamentos 200 in 3.0s (next.js: 534ms, proxy.ts: 244ms, application-code: 2.2s)
+ GET /dono 200 in 4.3s (next.js: 81ms, proxy.ts: 1499ms, application-code: 2.7s)
+ GET /comerciante/agendamentos 200 in 2.1s (next.js: 29ms, proxy.ts: 89ms, application-code: 1944ms)
+ GET /comerciante/clientes?establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 3.8s (next.js: 2.8s, proxy.ts: 166ms, application-code: 832ms)
+○ Compiling /comerciante/horarios ...
+ GET /comerciante/horarios?establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 4.8s (next.js: 4.0s, proxy.ts: 112ms, application-code: 632ms)
+○ Compiling /comerciante/midia ...
+ GET /comerciante/horarios?establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 5.2s (next.js: 449ms, proxy.ts: 738ms, application-code: 4.0s)
+ GET /dono 200 in 5.2s (next.js: 3.5s, proxy.ts: 732ms, application-code: 965ms)
+ GET /comerciante/midia?establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 22.0s (next.js: 17.6s, proxy.ts: 630ms, application-code: 3.8s)
+ GET /comerciante/midia?establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 3.1s (next.js: 123ms, proxy.ts: 1787ms, application-code: 1178ms)
+ GET /dono 200 in 3.2s (next.js: 203ms, proxy.ts: 462ms, application-code: 2.5s)
+ GET /comerciante/perfil?establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 5.1s (next.js: 4.2s, proxy.ts: 259ms, application-code: 658ms)
+○ Compiling /comerciante ...
+ GET /comerciante?establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 7.3s (next.js: 6.5s, proxy.ts: 91ms, application-code: 658ms)
+ GET /comerciante?establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 1876ms (next.js: 5ms, proxy.ts: 149ms, application-code: 1723ms)
+ GET /comerciante?establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 2.2s (next.js: 15ms, proxy.ts: 98ms, application-code: 2.1s)
+ GET /comerciante?establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 2.3s (next.js: 568ms, proxy.ts: 700ms, application-code: 1078ms)
+ GET /comerciante?establishment=7aa402bc-86a8-4cf3-b473-70346eb4ebf1 200 in 456ms (next.js: 8ms, proxy.ts: 71ms, application-code: 377ms)
+ GET /comerciante/horarios 200 in 1087ms (next.js: 46ms, proxy.ts: 314ms, application-code: 727ms)

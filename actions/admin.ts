@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { formatAddress, normalizeCep } from '@/lib/address'
@@ -29,6 +30,15 @@ async function getAdminEstablishmentId(requestedEstablishmentId?: FormDataEntryV
 
   if (!data) throw new Error('Nenhum estabelecimento encontrado para este administrador')
   return data.id
+}
+
+async function getAuthenticatedUserId(): Promise<string | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  return user?.id ?? null
 }
 
 const ServiceSchema = z.object({
@@ -248,10 +258,12 @@ const EstablishmentSettingsSchema = z.object({
   reminder_hours_before: z.coerce.number().int().min(1).max(72).default(12),
 })
 
-const BusinessHoursSchema = z.object({
-  reminder_hours_before: z.coerce.number().int().min(1).max(72).default(24),
-  auto_cancel_hours_before: z.coerce.number().int().min(1).max(72).default(4),
-  reminder_message: z.string().max(500).optional(),
+const ScheduleExceptionSchema = z.object({
+  exception_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  exception_type: z.enum(['bloqueio', 'extra', 'fechado']),
+  exception_start: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal('')),
+  exception_end: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal('')),
+  exception_reason: z.string().max(160).optional(),
 })
 
 const VideoSchema = z.object({
@@ -269,6 +281,10 @@ function videoProvider(url: string): 'youtube' | 'tiktok' | 'vimeo' | null {
 
 function cleanOptional(value: string | undefined) {
   return value?.trim() || null
+}
+
+function isValidTimeRange(open: string, close: string) {
+  return /^\d{2}:\d{2}$/.test(open) && /^\d{2}:\d{2}$/.test(close) && open < close
 }
 
 function makeAddressFromProfile(data: z.infer<typeof ProfileSettingsSchema>) {
@@ -379,26 +395,22 @@ export async function updateBusinessHours(formData: FormData): Promise<{
     return { error: { _form: [message] } }
   }
 
-  const parsed = BusinessHoursSchema.safeParse({
-    reminder_hours_before: formData.get('reminder_hours_before') || 24,
-    auto_cancel_hours_before: formData.get('auto_cancel_hours_before') || 4,
-    reminder_message: formData.get('reminder_message') || undefined,
-  })
-
-  if (!parsed.success) return { error: parsed.error.flatten().fieldErrors as Record<string, string[]> }
-
-  const businessHours = DAY_KEYS.reduce<Record<string, { open: string; close: string } | null>>(
+  const businessHours = DAY_KEYS.reduce<Record<string, { open: string; close: string }[] | null>>(
     (hours, day) => {
       const enabled = formData.get(`day_${day}_enabled`) === 'on'
-      const open = String(formData.get(`day_${day}_open`) || '08:00')
-      const close = String(formData.get(`day_${day}_close`) || '18:00')
-      hours[day] = enabled ? { open, close } : null
+      const opens = formData.getAll(`day_${day}_open`).map(String)
+      const closes = formData.getAll(`day_${day}_close`).map(String)
+      const ranges = opens
+        .map((open, index) => ({ open, close: closes[index] ?? '' }))
+        .filter((range) => isValidTimeRange(range.open, range.close))
+
+      hours[day] = enabled && ranges.length > 0 ? ranges : null
       return hours
     },
     {},
   )
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase
     .from('estabelecimentos')
     .update({
@@ -408,8 +420,59 @@ export async function updateBusinessHours(formData: FormData): Promise<{
 
   if (error) return { error: { _form: [friendlyEstablishmentError(error.message)] } }
 
+  const deleteIds = formData
+    .getAll('delete_exception_ids')
+    .map(String)
+    .filter((id) => z.string().uuid().safeParse(id).success)
+
+  if (deleteIds.length > 0) {
+    const { error: deleteError } = await supabase
+      .from('excecoes_horario_estabelecimento')
+      .delete()
+      .eq('estabelecimento_id', establishmentId)
+      .in('id', deleteIds)
+
+    if (deleteError) return { error: { _form: [deleteError.message] } }
+  }
+
+  if (formData.get('exception_date')) {
+    const exception = ScheduleExceptionSchema.safeParse({
+      exception_date: formData.get('exception_date'),
+      exception_type: formData.get('exception_type') || 'bloqueio',
+      exception_start: formData.get('exception_start') || '',
+      exception_end: formData.get('exception_end') || '',
+      exception_reason: formData.get('exception_reason') || undefined,
+    })
+
+    if (!exception.success) {
+      return { error: { _form: ['Confira a data e os horários da exceção.'] } }
+    }
+
+    const needsTime = exception.data.exception_type !== 'fechado'
+    if (
+      needsTime &&
+      !isValidTimeRange(exception.data.exception_start || '', exception.data.exception_end || '')
+    ) {
+      return { error: { _form: ['Informe início e fim válidos para bloqueio ou horário extra.'] } }
+    }
+
+    const { error: exceptionError } = await supabase
+      .from('excecoes_horario_estabelecimento')
+      .insert({
+        estabelecimento_id: establishmentId,
+        data: exception.data.exception_date,
+        tipo: exception.data.exception_type,
+        inicio: needsTime ? exception.data.exception_start : null,
+        fim: needsTime ? exception.data.exception_end : null,
+        motivo: cleanOptional(exception.data.exception_reason),
+      })
+
+    if (exceptionError) return { error: { _form: [exceptionError.message] } }
+  }
+
   revalidatePath('/admin/dashboard')
   revalidatePath('/dono')
+  revalidatePath('/')
   return { success: true }
 }
 
@@ -766,15 +829,17 @@ export async function confirmAppointment(
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
+  const actorId = await getAuthenticatedUserId()
 
-  const { data: appointment } = await supabase
+  const { data: appointment, error: fetchError } = await supabase
     .from('agendamentos')
-    .select('id')
+    .select('id, status')
     .eq('id', appointmentId)
     .eq('estabelecimento_id', establishmentId)
-    .single()
+    .maybeSingle()
 
+  if (fetchError) return { error: fetchError.message }
   if (!appointment) return { error: 'Agendamento não encontrado.' }
 
   const { error } = await supabase
@@ -784,6 +849,18 @@ export async function confirmAppointment(
     .eq('estabelecimento_id', establishmentId)
 
   if (error) return { error: error.message }
+
+  await supabase.rpc('registrar_movimento_agendamento', {
+    p_agendamento_id: appointmentId,
+    p_codigo_movimento: 'APROVADO_SALAO',
+    p_usuario_id: actorId,
+    p_status_anterior: appointment.status,
+    p_status_novo: 'confirmado',
+    p_metadata: {
+      origem: 'confirmAppointment',
+      estabelecimento_id: establishmentId,
+    },
+  })
 
   revalidatePath('/admin/dashboard')
   revalidatePath('/dono')
@@ -801,11 +878,25 @@ export async function refuseAppointment(
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
+  const actorId = await getAuthenticatedUserId()
+
+  const { data: appointment, error: fetchError } = await supabase
+    .from('agendamentos')
+    .select('id, status')
+    .eq('id', appointmentId)
+    .eq('estabelecimento_id', establishmentId)
+    .maybeSingle()
+
+  if (fetchError) return { error: fetchError.message }
+  if (!appointment) return { error: 'Agendamento não encontrado.' }
 
   const { data, error } = await supabase
     .from('agendamentos')
-    .delete()
+    .update({
+      status: 'cancelado',
+      observacoes: 'Recusado pelo comerciante',
+    })
     .eq('id', appointmentId)
     .eq('estabelecimento_id', establishmentId)
     .select('id')
@@ -813,6 +904,18 @@ export async function refuseAppointment(
 
   if (error) return { error: error.message }
   if (!data) return { error: 'Agendamento não encontrado.' }
+
+  await supabase.rpc('registrar_movimento_agendamento', {
+    p_agendamento_id: appointmentId,
+    p_codigo_movimento: 'RECUSADO_SALAO',
+    p_usuario_id: actorId,
+    p_status_anterior: appointment.status,
+    p_status_novo: 'cancelado',
+    p_metadata: {
+      origem: 'refuseAppointment',
+      estabelecimento_id: establishmentId,
+    },
+  })
 
   revalidatePath('/admin/dashboard')
   revalidatePath('/dono')
@@ -831,19 +934,27 @@ export async function finalizeAppointment(
     return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
+  const actorId = await getAuthenticatedUserId()
 
-  const { data: before } = await supabase
+  const { data: before, error: fetchError } = await supabase
     .from('agendamentos')
     .select('status')
     .eq('id', appointmentId)
     .eq('estabelecimento_id', establishmentId)
-    .single()
+    .maybeSingle()
 
+  if (fetchError) return { error: fetchError.message }
   if (!before) return { error: 'Agendamento não encontrado.' }
 
   const status =
     outcome === 'completed' ? 'concluido' : outcome === 'no_show' ? 'nao_compareceu' : 'cancelado'
+  const movementCode =
+    outcome === 'completed'
+      ? 'CONCLUIDO'
+      : outcome === 'no_show'
+        ? 'NAO_COMPARECEU'
+        : 'CANCELADO_COMERCIANTE'
 
   const { error } = await supabase
     .from('agendamentos')
@@ -860,6 +971,19 @@ export async function finalizeAppointment(
       return { error: 'Transição de status inválida.' }
     return { error: error.message }
   }
+
+  await supabase.rpc('registrar_movimento_agendamento', {
+    p_agendamento_id: appointmentId,
+    p_codigo_movimento: movementCode,
+    p_usuario_id: actorId,
+    p_status_anterior: before.status,
+    p_status_novo: status,
+    p_metadata: {
+      origem: 'finalizeAppointment',
+      estabelecimento_id: establishmentId,
+      outcome,
+    },
+  })
 
   revalidatePath('/admin/dashboard')
   revalidatePath('/dono')

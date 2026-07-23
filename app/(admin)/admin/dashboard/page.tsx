@@ -20,6 +20,7 @@ import {
   type AgendamentoPortugues,
 } from '@/lib/supabase/portuguese-schema-adapter'
 import { getServiceCatalog } from '@/lib/services/catalog-server'
+import type { ScheduleException } from '@/lib/schedule/availability'
 import type { AppointmentEvent, AppointmentStatus, Establishment, Service } from '@/database.types'
 
 export const metadata: Metadata = {
@@ -30,6 +31,7 @@ export const metadata: Metadata = {
 // Formato dos agendamentos unidos com perfis e servicos.
 type AppointmentRow = {
   id: string
+  appointment_code: string
   scheduled_at: string
   status: AppointmentStatus
   customer_name: string | null
@@ -127,11 +129,12 @@ export default async function AdminDashboard({ searchParams }: Props) {
   const [
     { data: rawAppointments },
     { data: mediaRaw },
+    { data: scheduleExceptionsRaw },
     serviceCatalog,
   ] = await Promise.all([
     supabase
       .from('agendamentos')
-      .select('id, horario, status, nome_cliente, telefone_cliente, preco_total, duracao_total_minutos, usuarios(nome, email), itens_agendamento(nome_servico, preco, duracao_minutos)')
+      .select('id, codigo, horario, status, nome_cliente, telefone_cliente, preco_total, duracao_total_minutos, usuarios(nome, email), itens_agendamento(nome_servico, preco, duracao_minutos)')
       .eq('estabelecimento_id', selectedEstablishment.id)
       .gte('horario', historyStart.toISOString())
       .order('horario', { ascending: true })
@@ -142,6 +145,13 @@ export default async function AdminDashboard({ searchParams }: Props) {
       .eq('estabelecimento_id', selectedEstablishment.id)
       .order('ordem', { ascending: true })
       .order('criado_em', { ascending: true }),
+    supabase
+      .from('excecoes_horario_estabelecimento')
+      .select('id, data, tipo, inicio, fim, motivo')
+      .eq('estabelecimento_id', selectedEstablishment.id)
+      .gte('data', new Date().toISOString().slice(0, 10))
+      .order('data', { ascending: true })
+      .limit(100),
     getServiceCatalog(),
   ])
 
@@ -150,6 +160,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
   // Estreita os tipos das linhas retornadas pelos joins.
   const appointments: AppointmentRow[] = ((rawAppointments ?? []) as AgendamentoPortugues[]).map((a) => ({
     id: a.id,
+    appointment_code: a.codigo,
     scheduled_at: a.horario,
     status: toLegacyAppointmentStatus(a.status),
     customer_name: a.nome_cliente,
@@ -178,6 +189,21 @@ export default async function AdminDashboard({ searchParams }: Props) {
 
   const services: Service[] = est.services ?? []
   const media = ((mediaRaw ?? []) as Parameters<typeof mapMidiaEstabelecimento>[0][]).map(mapMidiaEstabelecimento)
+  const scheduleExceptions: ScheduleException[] = ((scheduleExceptionsRaw ?? []) as {
+    id: string
+    data: string
+    tipo: 'bloqueio' | 'extra' | 'fechado'
+    inicio: string | null
+    fim: string | null
+    motivo: string | null
+  }[]).map((exception) => ({
+    id: exception.id,
+    date: exception.data,
+    type: exception.tipo,
+    start_time: exception.inicio,
+    end_time: exception.fim,
+    reason: exception.motivo,
+  }))
   const events: AppointmentEvent[] = []
   const activeServices = services.filter((service) => service.is_active)
   const now = new Date()
@@ -409,7 +435,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
 
             {activeTab === 'funcionamento' ? (
               <Card title="Funcionamento">
-                <BusinessHoursForm establishment={est as Establishment} />
+                <BusinessHoursForm establishment={est as Establishment} exceptions={scheduleExceptions} />
               </Card>
             ) : null}
 

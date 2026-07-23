@@ -3,7 +3,18 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { MdAddBusiness, MdDashboard, MdHome, MdLogout, MdPerson } from 'react-icons/md'
+import {
+  MdAddBusiness,
+  MdCalendarMonth,
+  MdDashboard,
+  MdHome,
+  MdImage,
+  MdLogout,
+  MdPeople,
+  MdPerson,
+  MdSchedule,
+  MdViewList,
+} from 'react-icons/md'
 import { createClient } from '@/lib/supabase/client'
 
 type MenuItem = {
@@ -17,6 +28,7 @@ type Props = {
   userLabel?: string
   panelHref?: string
   showAddEstablishment?: boolean
+  merchantMenu?: boolean
 }
 
 const anonymousMenu: MenuItem[] = [
@@ -46,10 +58,15 @@ function CloseIcon() {
 function menuIcon(label: string) {
   if (label === 'Home') return <MdHome aria-hidden="true" className="h-4 w-4" />
   if (label === 'Painel') return <MdDashboard aria-hidden="true" className="h-4 w-4" />
+  if (label === 'Agendamentos') return <MdCalendarMonth aria-hidden="true" className="h-4 w-4" />
+  if (label === 'Clientes') return <MdPeople aria-hidden="true" className="h-4 w-4" />
+  if (label === 'Serviços') return <MdViewList aria-hidden="true" className="h-4 w-4" />
+  if (label === 'Horários') return <MdSchedule aria-hidden="true" className="h-4 w-4" />
+  if (label === 'Mídia') return <MdImage aria-hidden="true" className="h-4 w-4" />
   return <MdPerson aria-hidden="true" className="h-4 w-4" />
 }
 
-export default function TopNavigation({ loggedIn, userName, userLabel, panelHref, showAddEstablishment }: Props) {
+export default function TopNavigation({ loggedIn, userName, userLabel, panelHref, showAddEstablishment, merchantMenu }: Props) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -63,6 +80,16 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
         { label: 'Painel', href: panelHref ?? '/buscar' },
       ]
     : anonymousMenu
+  const merchantMenuItems: MenuItem[] = merchantMenu
+    ? [
+        { label: 'Agendamentos', href: '/comerciante/agendamentos' },
+        { label: 'Clientes', href: '/comerciante/clientes' },
+        { label: 'Serviços', href: '/comerciante/servicos' },
+        { label: 'Horários', href: '/comerciante/horarios' },
+        { label: 'Mídia', href: '/comerciante/midia' },
+        { label: 'Perfil', href: '/comerciante/perfil' },
+      ]
+    : []
   const primaryMenuItems = menuItems.filter((item) => item.href !== '/perfil')
   const profileMenuItem = menuItems.find((item) => item.href === '/perfil')
 
@@ -275,6 +302,32 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
                   </Link>
                 )
               })}
+              {merchantMenuItems.length > 0 ? (
+                <div className="my-2 border-t border-slate-200/70 pt-2">
+                  <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Gestão do salão
+                  </p>
+                  <div className="flex flex-col gap-1">
+                    {merchantMenuItems.map((item) => {
+                      const isActive = pathname === item.href
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition ${
+                            isActive
+                              ? 'bg-slate-950 text-white'
+                              : 'text-slate-700 hover:bg-slate-100 active:bg-slate-200'
+                          }`}
+                        >
+                          {menuIcon(item.label)}
+                          {item.label}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
               {showAddEstablishment && (
                 <button
                   onClick={() => {
@@ -287,23 +340,19 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
                   + Loja
                 </button>
               )}
+              {loggedIn && (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  disabled={logoutBusy}
+                  className="mt-1 flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <MdLogout aria-hidden="true" className="h-4 w-4" />
+                  {logoutBusy ? 'Saindo...' : 'Sair'}
+                </button>
+              )}
             </div>
           </nav>
-
-          {/* Logout button - only for logged in users */}
-          {loggedIn && (
-            <div className="border-t border-slate-200/70 p-4">
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={logoutBusy}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <MdLogout aria-hidden="true" className="h-4 w-4" />
-                {logoutBusy ? 'Saindo...' : 'Logout'}
-              </button>
-            </div>
-          )}
         </div>
       )}
 

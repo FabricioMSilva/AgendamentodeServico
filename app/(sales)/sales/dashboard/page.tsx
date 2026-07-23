@@ -36,7 +36,7 @@ export default async function SalesDashboard() {
     db.from('agendamentos').select('id', { count: 'exact', head: true }),
     db
       .from('agendamentos')
-      .select('id, nome_cliente, telefone_cliente, horario, status, preco_total, estabelecimentos(nome, slug)')
+      .select('id, codigo, nome_cliente, telefone_cliente, horario, status, preco_total, estabelecimentos(nome, slug)')
       .order('horario', { ascending: false })
       .limit(15),
     db
@@ -79,6 +79,7 @@ export default async function SalesDashboard() {
 
     return {
       id: appointment.id,
+      codigo: appointment.codigo,
       nome_cliente: appointment.nome_cliente,
       telefone_cliente: appointment.telefone_cliente,
       horario: appointment.horario,
