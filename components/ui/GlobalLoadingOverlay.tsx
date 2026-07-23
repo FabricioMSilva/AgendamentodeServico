@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 
 const SHOW_DELAY_MS = 110
+const INITIAL_ENTRY_MS = 3000
 const MIN_VISIBLE_MS = 280
 const FADE_OUT_MS = 260
 const FORM_FALLBACK_HIDE_MS = 4500
@@ -65,9 +66,12 @@ export default function GlobalLoadingOverlay() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const search = searchParams.toString()
-  const [mounted, setMounted] = useState(false)
-  const [visible, setVisible] = useState(false)
+  const [mounted, setMounted] = useState(true)
+  const [visible, setVisible] = useState(true)
   const visibleSinceRef = useRef(0)
+  const startupActiveRef = useRef(true)
+  const queuedStartupHideRef = useRef(false)
+  const startupTimerRef = useRef<number | null>(null)
   const showTimerRef = useRef<number | null>(null)
   const hideTimerRef = useRef<number | null>(null)
   const fallbackTimerRef = useRef<number | null>(null)
@@ -96,6 +100,11 @@ export default function GlobalLoadingOverlay() {
   }
 
   const hide = () => {
+    if (startupActiveRef.current) {
+      queuedStartupHideRef.current = true
+      return
+    }
+
     clearTimer(showTimerRef)
     clearTimer(fallbackTimerRef)
 
@@ -125,6 +134,18 @@ export default function GlobalLoadingOverlay() {
   }
 
   useEffect(() => {
+    visibleSinceRef.current = Date.now()
+    startupTimerRef.current = window.setTimeout(() => {
+      startupActiveRef.current = false
+      if (queuedStartupHideRef.current) {
+        queuedStartupHideRef.current = false
+        hide()
+        return
+      }
+
+      hideWhenSettled()
+    }, INITIAL_ENTRY_MS)
+
     const preload = () => preloadLoadingImages()
     const idleWindow = window as IdleWindow
     const idleId = idleWindow.requestIdleCallback
@@ -170,6 +191,7 @@ export default function GlobalLoadingOverlay() {
       } else if (typeof idleId === 'number') {
         window.clearTimeout(idleId)
       }
+      clearTimer(startupTimerRef)
       clearTimer(showTimerRef)
       clearTimer(hideTimerRef)
       clearTimer(fallbackTimerRef)
