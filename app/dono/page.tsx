@@ -85,23 +85,16 @@ export default async function OwnerEntryPage() {
           </div>
 
           {(establishments ?? []).length < MAX_OWNER_ESTABLISHMENTS ? (
-            <div className="grid gap-5">
-              <NewEstablishmentModal
-                currentCount={(establishments ?? []).length}
-                maxEstablishments={MAX_OWNER_ESTABLISHMENTS}
-                catalog={serviceCatalog}
-              />
-              <OwnerEstablishmentEditor
-                establishments={(establishments ?? []).map((item) => ({
-                  id: item.id,
-                  name: item.nome,
-                  slug: item.slug,
-                  is_blocked: item.bloqueado,
-                  services: (item.servicos ?? []).map(mapServico),
-                }))}
-                catalog={serviceCatalog}
-              />
-            </div>
+            <OwnerEstablishmentEditor
+              establishments={(establishments ?? []).map((item) => ({
+                id: item.id,
+                name: item.nome,
+                slug: item.slug,
+                is_blocked: item.bloqueado,
+                services: (item.servicos ?? []).map(mapServico),
+              }))}
+              catalog={serviceCatalog}
+            />
           ) : (
             <div className="rounded-[8px] bg-white/6 p-5 text-sm text-white/68 ring-1 ring-white/10">
               Você já atingiu o limite de {MAX_OWNER_ESTABLISHMENTS} estabelecimentos.

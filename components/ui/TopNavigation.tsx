@@ -15,6 +15,7 @@ type Props = {
   userName?: string
   userLabel?: string
   panelHref?: string
+  showAddEstablishment?: boolean
 }
 
 const anonymousMenu: MenuItem[] = [
@@ -41,9 +42,10 @@ function CloseIcon() {
   )
 }
 
-export default function TopNavigation({ loggedIn, userName, userLabel, panelHref }: Props) {
+export default function TopNavigation({ loggedIn, userName, userLabel, panelHref, showAddEstablishment }: Props) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const menuItems: MenuItem[] = loggedIn
@@ -128,6 +130,15 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
                 )
               })}
 
+              {showAddEstablishment && (
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition duration-150"
+                >
+                  + Loja
+                </button>
+              )}
+
               <LogoutButton className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" />
             </div>
           ) : (
@@ -203,6 +214,17 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
                   </Link>
                 )
               })}
+              {showAddEstablishment && (
+                <button
+                  onClick={() => {
+                    setShowAddModal(true)
+                    setMobileMenuOpen(false)
+                  }}
+                  className="flex items-center rounded-lg px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition"
+                >
+                  + Loja
+                </button>
+              )}
             </div>
           </nav>
 
@@ -212,6 +234,39 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
               <LogoutButton className="w-full rounded-lg bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition" />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Add Establishment Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+            <button
+              onClick={() => setShowAddModal(false)}
+              className="absolute right-4 top-4 text-slate-500 hover:text-slate-700"
+            >
+              ✕
+            </button>
+            <h2 className="text-lg font-semibold text-slate-900">Adicionar loja</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Crie um novo estabelecimento e gerenciá-lo através do seu painel.
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="flex-1 rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-200 transition"
+              >
+                Cancelar
+              </button>
+              <Link
+                href="/dono"
+                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-blue-700 transition"
+                onClick={() => setShowAddModal(false)}
+              >
+                Ir para painel
+              </Link>
+            </div>
+          </div>
         </div>
       )}
     </>

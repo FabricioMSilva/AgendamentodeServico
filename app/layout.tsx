@@ -39,9 +39,11 @@ export default async function RootLayout({
   let userName: string | undefined
   let userLabel: string | undefined
   let panelHref: string | undefined
+  let showAddEstablishment = false
 
   if (user) {
     loggedIn = true
+    const db = createAdminClient()
     const { data: profile } = await supabase
       .from('usuarios')
       .select('nome, telefone, nivel_acesso, tipo_cadastro, comerciante_status, comerciante_ativo, conta_bloqueada')
@@ -60,7 +62,6 @@ export default async function RootLayout({
     }
 
     if (!superAdmin) {
-      const db = createAdminClient()
       const { data: establishment } = await db
         .from('estabelecimentos')
         .select('id, status_aprovacao')
@@ -83,9 +84,20 @@ export default async function RootLayout({
             ? '/admin/dashboard'
             : '/dono'
         userLabel = 'Comerciante'
+
+        // Check if can add more establishments (max 3)
+        const { count: establishmentCount } = await db
+          .from('estabelecimentos')
+          .select('id', { count: 'exact', head: true })
+          .eq('usuario_admin_id', user.id)
+
+        showAddEstablishment = (establishmentCount ?? 0) < 3
       }
     }
   }
+
+  // Check if current path is an auth route by looking at the URL
+  const isAuthRoute = false // This will be set dynamically in a client component
 
   return (
     <html
@@ -95,7 +107,8 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <PwaCleanup />
-        <TopNavigation loggedIn={loggedIn} userName={userName} userLabel={userLabel} panelHref={panelHref} />
+        {/* Only render TopNavigation if user is logged in or not on auth routes */}
+        {loggedIn && <TopNavigation loggedIn={loggedIn} userName={userName} userLabel={userLabel} panelHref={panelHref} showAddEstablishment={showAddEstablishment} />}
         <main className={`flex-1 ${loggedIn ? 'pt-16' : ''}`}>{children}</main>
       </body>
     </html>

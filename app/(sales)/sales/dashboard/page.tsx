@@ -163,47 +163,6 @@ export default async function SalesDashboard() {
             ]),
           )}
         />
-
-        <section>
-          <h2 className="mb-4 text-lg font-semibold text-white">Todos os estabelecimentos</h2>
-          <div className="divide-y divide-white/10 rounded-[8px] border border-white/10 bg-white/6">
-            {establishments?.map((e) => {
-              const blockAction = async () => {
-                'use server'
-                await setEstablishmentBlocked(e.id, !e.bloqueado)
-              }
-              const owner = Array.isArray(e.usuarios) ? e.usuarios[0] : e.usuarios
-              return (
-                <div key={e.id} className="flex items-center justify-between gap-4 p-4">
-                  <div>
-                    <p className="font-medium text-white">{e.nome}</p>
-                    <p className="text-sm text-white/55">/{e.slug} · {owner?.email ?? e.email ?? 'sem e-mail vinculado'}</p>
-                    {e.usuario_admin_id ? (
-                      <span className="text-xs text-emerald-100">Vinculado</span>
-                    ) : (
-                      <span className="text-xs text-amber-200">Aguardando primeiro acesso</span>
-                    )}
-                  </div>
-                  <form action={blockAction}>
-                    <button
-                      type="submit"
-                      className={`rounded-[8px] px-3 py-1.5 text-sm font-medium transition ${
-                        e.bloqueado
-                          ? 'bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/15'
-                          : 'bg-[#ff8ea8]/12 text-[#ff8ea8] hover:bg-[#ff8ea8]/18'
-                      }`}
-                    >
-                      {e.bloqueado ? 'Desbloquear' : 'Bloquear'}
-                    </button>
-                  </form>
-                </div>
-              )
-            })}
-            {(!establishments || establishments.length === 0) && (
-              <p className="p-4 text-sm text-white/55">Nenhum estabelecimento cadastrado ainda.</p>
-            )}
-          </div>
-        </section>
       </div>
     </main>
   )
