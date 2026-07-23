@@ -384,6 +384,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
                   confirmed={confirmed}
                   completedServices={completed}
                   establishmentId={est.id}
+                  establishmentName={est.name}
                 />
               </Card>
             ) : null}

@@ -21,8 +21,13 @@ export default function PageLoading({
         <section className="overflow-hidden rounded-[8px] bg-[linear-gradient(180deg,#11172a_0%,#171f38_56%,#241737_100%)] p-5 ring-1 ring-white/10 sm:p-7">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-[8px] bg-[linear-gradient(135deg,#6A00FF_0%,#FF007F_52%,#FF66B2_100%)] shadow-[0_18px_36px_rgba(106,0,255,0.24)]">
-                <span className="h-5 w-5 animate-ping rounded-full bg-white/80" />
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-[18px] bg-[#171F38] shadow-[0_18px_36px_rgba(106,0,255,0.24)] ring-1 ring-white/12">
+                <span className="absolute inset-[-8px] animate-ping rounded-[24px] bg-[#FF007F]/18" />
+                <img
+                  src="/imagens/icon.transparent.png"
+                  alt=""
+                  className="relative h-11 w-11 animate-[ibeleza-float_1.35s_ease-in-out_infinite] object-contain"
+                />
               </div>
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/48">

@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import LogoutButton from '@/components/auth/LogoutButton'
+import { MdAddBusiness, MdDashboard, MdHome, MdLogout, MdPerson } from 'react-icons/md'
+import { createClient } from '@/lib/supabase/client'
 
 type MenuItem = {
   label: string
@@ -19,7 +20,7 @@ type Props = {
 }
 
 const anonymousMenu: MenuItem[] = [
-  { label: 'Buscar', href: '/buscar' },
+  { label: 'Home', href: '/buscar' },
   { label: 'Login', href: '/login' },
 ]
 
@@ -42,19 +43,28 @@ function CloseIcon() {
   )
 }
 
+function menuIcon(label: string) {
+  if (label === 'Home') return <MdHome aria-hidden="true" className="h-4 w-4" />
+  if (label === 'Painel') return <MdDashboard aria-hidden="true" className="h-4 w-4" />
+  return <MdPerson aria-hidden="true" className="h-4 w-4" />
+}
+
 export default function TopNavigation({ loggedIn, userName, userLabel, panelHref, showAddEstablishment }: Props) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [logoutBusy, setLogoutBusy] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const menuItems: MenuItem[] = loggedIn
     ? [
-        { label: 'Buscar', href: '/buscar' },
+        { label: 'Home', href: '/buscar' },
         { label: userName ? userName : 'Perfil', href: '/perfil' },
         { label: 'Painel', href: panelHref ?? '/buscar' },
       ]
     : anonymousMenu
+  const primaryMenuItems = menuItems.filter((item) => item.href !== '/perfil')
+  const profileMenuItem = menuItems.find((item) => item.href === '/perfil')
 
   // Close menu when pathname changes
   useEffect(() => {
@@ -98,48 +108,97 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
     }
   }, [mobileMenuOpen])
 
+  const handleLogout = async () => {
+    setLogoutBusy(true)
+    window.dispatchEvent(new Event('ibeleza-loading:start'))
+
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      window.location.assign('/login')
+    } finally {
+      setLogoutBusy(false)
+    }
+  }
+
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-40 border-b border-slate-200/70 bg-white/95 shadow-sm backdrop-blur backdrop-saturate-150">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link href="/buscar" className="text-lg font-semibold tracking-tight text-slate-950">
-            IBeleza
-          </Link>
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href="/buscar" className="shrink-0 text-lg font-semibold tracking-tight text-slate-950">
+              IBeleza
+            </Link>
 
-          {loggedIn && userLabel ? (
-            <span className="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 sm:inline-block">
-              {userLabel}
-            </span>
-          ) : null}
+            {loggedIn && userLabel ? (
+              <span className="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 md:inline-block">
+                {userLabel}
+              </span>
+            ) : null}
+          </div>
 
           {/* Desktop menu - for authenticated users */}
           {loggedIn ? (
-            <div className="hidden flex-wrap items-center justify-end gap-2 sm:flex sm:gap-3">
-              {menuItems.map((item) => {
+            <div className="hidden min-w-0 flex-nowrap items-center justify-end gap-2 sm:flex">
+              <nav className="flex items-center gap-2" aria-label="Navegação principal">
+                {primaryMenuItems.map((item) => {
+                  const isActive = pathname === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-label={item.label}
+                      title={item.label}
+                      className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition duration-150 ${
+                        isActive ? 'text-slate-950' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
+                      }`}
+                    >
+                      {menuIcon(item.label)}
+                    </Link>
+                  )
+                })}
+              </nav>
+
+              {profileMenuItem ? (() => {
+                const item = profileMenuItem
                 const isActive = pathname === item.href
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition duration-150 ${
-                      isActive ? 'bg-slate-950 text-white' : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
+                    aria-label={item.label}
+                    title={item.label}
+                    className={`hidden h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition duration-150 lg:inline-flex ${
+                      isActive ? 'text-slate-950' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
                     }`}
                   >
-                    {item.label}
+                    {menuIcon(item.label)}
                   </Link>
                 )
-              })}
+              })() : null}
 
               {showAddEstablishment && (
                 <button
+                  type="button"
                   onClick={() => setShowAddModal(true)}
-                  className="rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition duration-150"
+                  aria-label="Adicionar loja"
+                  title="Adicionar loja"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-slate-700 transition duration-150 hover:bg-slate-100 hover:text-slate-950"
                 >
-                  + Loja
+                  <MdAddBusiness aria-hidden="true" className="h-4 w-4" />
                 </button>
               )}
 
-              <LogoutButton className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" />
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={logoutBusy}
+                aria-label={logoutBusy ? 'Saindo' : 'Logout'}
+                title={logoutBusy ? 'Saindo' : 'Logout'}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-rose-600 transition duration-150 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <MdLogout aria-hidden="true" className="h-4 w-4" />
+              </button>
             </div>
           ) : (
             /* Desktop menu for anonymous users - styled for better visibility */
@@ -150,12 +209,13 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition duration-150 ${
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition duration-150 ${
                       isActive 
                         ? 'bg-slate-950 text-white' 
                         : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
                     }`}
                   >
+                    {menuIcon(item.label)}
                     {item.label}
                   </Link>
                 )
@@ -204,12 +264,13 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center rounded-lg px-4 py-3 text-sm font-semibold transition ${
+                    className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition ${
                       isActive
                         ? 'bg-slate-950 text-white'
                         : 'text-slate-700 hover:bg-slate-100 active:bg-slate-200'
                     }`}
                   >
+                    {menuIcon(item.label)}
                     {item.label}
                   </Link>
                 )
@@ -220,8 +281,9 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
                     setShowAddModal(true)
                     setMobileMenuOpen(false)
                   }}
-                  className="flex items-center rounded-lg px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition"
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 active:bg-slate-200"
                 >
+                  <MdAddBusiness aria-hidden="true" className="h-4 w-4" />
                   + Loja
                 </button>
               )}
@@ -231,7 +293,15 @@ export default function TopNavigation({ loggedIn, userName, userLabel, panelHref
           {/* Logout button - only for logged in users */}
           {loggedIn && (
             <div className="border-t border-slate-200/70 p-4">
-              <LogoutButton className="w-full rounded-lg bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition" />
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={logoutBusy}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <MdLogout aria-hidden="true" className="h-4 w-4" />
+                {logoutBusy ? 'Saindo...' : 'Logout'}
+              </button>
             </div>
           )}
         </div>

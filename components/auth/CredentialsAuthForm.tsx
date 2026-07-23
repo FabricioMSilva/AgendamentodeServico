@@ -3,7 +3,6 @@
 import type { FormEvent } from 'react'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import AddressFields from '@/components/forms/AddressFields'
 import PhoneField from '@/components/forms/PhoneField'
@@ -77,7 +76,6 @@ async function getSessionTarget(returnTo: string) {
 }
 
 export default function CredentialsAuthForm({ initialMode = 'login', returnTo = '/' }: Props) {
-  const router = useRouter()
   const [mode, setMode] = useState<Mode>(initialMode)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -98,9 +96,11 @@ export default function CredentialsAuthForm({ initialMode = 'login', returnTo = 
     event.preventDefault()
     setBusy(true)
     setMessage(null)
+    window.dispatchEvent(new Event('ibeleza-loading:start'))
 
     const supabase = createClient()
     const form = new FormData(event.currentTarget)
+    let navigating = false
 
     try {
       if (isSignup) {
@@ -177,14 +177,17 @@ export default function CredentialsAuthForm({ initialMode = 'login', returnTo = 
       }
 
       const target = await getSessionTarget(returnTo)
-      router.refresh()
-      router.push(target)
+      navigating = true
+      window.location.assign(target)
     } catch (error) {
       setMessage(
         friendlyAuthError(error instanceof Error ? error.message : 'Não foi possível concluir o cadastro.'),
       )
     } finally {
       setBusy(false)
+      if (!navigating) {
+        window.dispatchEvent(new Event('ibeleza-loading:stop'))
+      }
     }
   }
 
@@ -192,9 +195,9 @@ export default function CredentialsAuthForm({ initialMode = 'login', returnTo = 
     <div className="w-full space-y-5 rounded-[8px] bg-white/6 p-6 shadow-[0_18px_50px_rgba(0,0,0,0.18)] sm:p-7">
       <div className="text-center">
         <img
-          src="/imagens/ibeleza.png"
+          src="/imagens/LogoHorizontal.transparent.png"
           alt="IBeleza"
-          className="mx-auto h-auto w-[132px] max-w-full object-contain sm:w-[156px]"
+          className="mx-auto h-auto w-[220px] max-w-full object-contain sm:w-[260px]"
         />
         <p className="mt-3 text-sm leading-6 text-white/68 sm:text-base">
           {isSignup

@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import NewEstablishmentModal from '@/components/owner/NewEstablishmentModal'
-import type { ServiceCatalog } from '@/lib/services/catalog-server'
+import type { ServiceCatalogCategory } from '@/lib/services/categories'
 
 type Props = {
   currentCount: number
   maxEstablishments: number
-  catalog: ServiceCatalog
+  catalog: ServiceCatalogCategory[]
   showLabel?: boolean
 }
 

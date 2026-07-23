@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
-import { confirmAppointment, finalizeAppointment } from '@/actions/admin'
+import { confirmAppointment, finalizeAppointment, refuseAppointment } from '@/actions/admin'
 import Badge from '@/components/ui/Badge'
 import type { AppointmentStatus } from '@/database.types'
 
@@ -27,6 +28,31 @@ type AppointmentWithRelations = {
   }[]
 }
 
+type ActionChildProps = {
+  children?: React.ReactNode
+  onError?: (msg: string) => void
+}
+
+type ActionNotification = {
+  phone: string | null
+  message: string
+}
+
+function attachActionError(
+  children: React.ReactNode,
+  onError: (msg: string) => void,
+): React.ReactNode {
+  return React.Children.map(children, (child) => {
+    if (!React.isValidElement<ActionChildProps>(child)) return child
+
+    if (child.type === React.Fragment) {
+      return attachActionError(child.props.children, onError)
+    }
+
+    return React.cloneElement(child, { onError })
+  })
+}
+
 function money(value: number | null) {
   return value == null ? 'Sob consulta' : `R$ ${Number(value).toFixed(2)}`
 }
@@ -39,6 +65,43 @@ function whatsappUrl(phone: string, appt: AppointmentWithRelations) {
   return `https://wa.me/${digits}?text=${text}`
 }
 
+function serviceLabel(appt: AppointmentWithRelations) {
+  if (appt.appointment_items.length > 0) {
+    return appt.appointment_items.map((item) => item.service_name).join(' + ')
+  }
+
+  return appt.services?.name ?? 'serviço'
+}
+
+function customerLabel(appt: AppointmentWithRelations) {
+  return appt.customer_name ?? appt.profiles?.name ?? 'tudo bem'
+}
+
+function confirmationMessage(appt: AppointmentWithRelations, establishmentName: string) {
+  return [
+    `Olá, ${customerLabel(appt)}!`,
+    `Seu agendamento em ${establishmentName} foi confirmado para ${dayjs(appt.scheduled_at).format('DD/MM [às] HH:mm')}.`,
+    `Serviço: ${serviceLabel(appt)}.`,
+    'Te esperamos!',
+  ].join(' ')
+}
+
+function refusalMessage(appt: AppointmentWithRelations, establishmentName: string) {
+  return [
+    `Olá, ${customerLabel(appt)}!`,
+    `Seu pedido de agendamento em ${establishmentName} para ${dayjs(appt.scheduled_at).format('DD/MM [às] HH:mm')} não pôde ser aprovado.`,
+    'Chame a gente por aqui para escolher outro horário.',
+  ].join(' ')
+}
+
+function openWhatsappNotification(notification?: ActionNotification) {
+  const digits = notification?.phone?.replace(/\D/g, '')
+  if (!digits || !notification) return
+
+  const href = `https://wa.me/${digits}?text=${encodeURIComponent(notification.message)}`
+  window.open(href, '_blank', 'noopener,noreferrer')
+}
+
 function AppointmentCard({
   appt,
   actions,
@@ -48,14 +111,7 @@ function AppointmentCard({
 }) {
   const [actionError, setActionError] = useState<string | null>(null)
 
-  const actionsWithError = actions
-    ? React.Children.map(actions, (child) => {
-        if (React.isValidElement<{ onError?: (msg: string) => void }>(child)) {
-          return React.cloneElement(child, { onError: (msg: string) => setActionError(msg) })
-        }
-        return child
-      })
-    : null
+  const actionsWithError = actions ? attachActionError(actions, setActionError) : null
 
   return (
     <div className="space-y-1 rounded-[8px] border border-white/10 bg-[#11172B] p-4">
@@ -103,14 +159,17 @@ function ActionButton({
   label,
   onClick,
   onError = () => {},
+  notify,
   variant = 'primary',
 }: {
   label: string
   onClick: () => Promise<{ error?: string } | undefined>
   onError?: (msg: string) => void
+  notify?: ActionNotification
   variant?: ActionVariant
 }) {
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   const colors: Record<ActionVariant, string> = {
     primary: 'bg-white/8 text-white hover:bg-white/12',
@@ -123,9 +182,20 @@ function ActionButton({
       disabled={loading}
       onClick={async () => {
         setLoading(true)
-        const result = await onClick()
-        if (result?.error) onError(result.error)
-        setLoading(false)
+        try {
+          const result = await onClick()
+          if (result?.error) {
+            onError(result.error)
+            return
+          }
+
+          openWhatsappNotification(notify)
+          router.refresh()
+        } catch (err: unknown) {
+          onError(err instanceof Error ? err.message : 'Não foi possível executar esta ação.')
+        } finally {
+          setLoading(false)
+        }
       }}
       className={`rounded-[8px] px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${colors[variant]}`}
     >
@@ -139,6 +209,7 @@ interface AppointmentBoardProps {
   confirmed: AppointmentWithRelations[]
   completedServices: AppointmentWithRelations[]
   establishmentId: string
+  establishmentName: string
 }
 
 export default function AppointmentBoard({
@@ -146,6 +217,7 @@ export default function AppointmentBoard({
   confirmed,
   completedServices,
   establishmentId,
+  establishmentName,
 }: AppointmentBoardProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -165,11 +237,19 @@ export default function AppointmentBoard({
                     label="Confirmar"
                     variant="success"
                     onClick={() => confirmAppointment(a.id, establishmentId)}
+                    notify={{
+                      phone: a.customer_phone,
+                      message: confirmationMessage(a, establishmentName),
+                    }}
                   />
                   <ActionButton
                     label="Recusar"
                     variant="danger"
-                    onClick={() => finalizeAppointment(a.id, 'cancelled', establishmentId)}
+                    onClick={() => refuseAppointment(a.id, establishmentId)}
+                    notify={{
+                      phone: a.customer_phone,
+                      message: refusalMessage(a, establishmentName),
+                    }}
                   />
                 </>
               }

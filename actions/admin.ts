@@ -409,6 +409,7 @@ export async function updateBusinessHours(formData: FormData): Promise<{
   if (error) return { error: { _form: [friendlyEstablishmentError(error.message)] } }
 
   revalidatePath('/admin/dashboard')
+  revalidatePath('/dono')
   return { success: true }
 }
 
@@ -712,6 +713,7 @@ export async function createServiceFromCatalog(formData: FormData): Promise<{ su
   if (error) return { error: error.message }
 
   revalidatePath('/admin/dashboard')
+  revalidatePath('/dono')
   return { success: true }
 }
 
@@ -747,6 +749,7 @@ export async function suggestService(formData: FormData): Promise<{
   if (error) return { error: { _form: [error.message] } }
 
   revalidatePath('/admin/dashboard')
+  revalidatePath('/dono')
   return { success: true }
 }
 
@@ -783,6 +786,36 @@ export async function confirmAppointment(
   if (error) return { error: error.message }
 
   revalidatePath('/admin/dashboard')
+  revalidatePath('/dono')
+  return { success: true }
+}
+
+export async function refuseAppointment(
+  appointmentId: string,
+  requestedEstablishmentId?: string,
+): Promise<{ success?: boolean; error?: string }> {
+  let establishmentId: string
+  try {
+    establishmentId = await getAdminEstablishmentId(requestedEstablishmentId)
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : 'Erro desconhecido' }
+  }
+
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('agendamentos')
+    .delete()
+    .eq('id', appointmentId)
+    .eq('estabelecimento_id', establishmentId)
+    .select('id')
+    .maybeSingle()
+
+  if (error) return { error: error.message }
+  if (!data) return { error: 'Agendamento não encontrado.' }
+
+  revalidatePath('/admin/dashboard')
+  revalidatePath('/dono')
   return { success: true }
 }
 
@@ -829,5 +862,6 @@ export async function finalizeAppointment(
   }
 
   revalidatePath('/admin/dashboard')
+  revalidatePath('/dono')
   return { success: true }
 }

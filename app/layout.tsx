@@ -3,6 +3,7 @@ import { Fredoka, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import PwaCleanup from "@/components/PwaCleanup";
 import TopNavigation from "@/components/ui/TopNavigation";
+import GlobalLoadingOverlay from "@/components/ui/GlobalLoadingOverlay";
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuperAdmin } from '@/lib/auth'
@@ -107,6 +108,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <PwaCleanup />
+        <GlobalLoadingOverlay />
         {/* Only render TopNavigation if user is logged in or not on auth routes */}
         {loggedIn && <TopNavigation loggedIn={loggedIn} userName={userName} userLabel={userLabel} panelHref={panelHref} showAddEstablishment={showAddEstablishment} />}
         <main className={`flex-1 ${loggedIn ? 'pt-16' : ''}`}>{children}</main>

@@ -1,6 +1,7 @@
- 'use client'
+'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { MdClose } from 'react-icons/md'
 import ServiceForm from '@/components/admin/ServiceForm'
 import ServiceList from '@/components/admin/ServiceList'
 import type { Service } from '@/database.types'
@@ -23,15 +24,6 @@ export default function OwnerEstablishmentEditor({
 }) {
   const [selectedEstablishment, setSelectedEstablishment] = useState<OwnerEstablishment | null>(null)
 
-  useEffect(() => {
-    if (!selectedEstablishment) return
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setSelectedEstablishment(null)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [selectedEstablishment])
-
   return (
     <div className="space-y-5">
       <div className="rounded-[18px] border border-white/10 bg-[#11172B]/50 p-5">
@@ -42,7 +34,7 @@ export default function OwnerEstablishmentEditor({
             </p>
             <h2 className="mt-2 text-xl font-semibold text-white">Clique para editar</h2>
             <p className="mt-2 text-sm leading-6 text-white/68">
-              Toque em um estabelecimento para abrir o modal de edição de serviços, preços e catálogo.
+              Toque em um estabelecimento para abrir a edição de serviços, preços e catálogo nesta seção.
             </p>
           </div>
         </div>
@@ -53,7 +45,12 @@ export default function OwnerEstablishmentEditor({
               key={establishment.id}
               type="button"
               onClick={() => setSelectedEstablishment(establishment)}
-              className="group flex w-full flex-col gap-3 rounded-[18px] border border-white/10 bg-[#131b2f] p-4 text-left transition hover:border-white/20"
+              className={[
+                'group flex w-full flex-col gap-3 rounded-[18px] border p-4 text-left transition',
+                selectedEstablishment?.id === establishment.id
+                  ? 'border-[#8FF0F4]/55 bg-[#8FF0F4]/10'
+                  : 'border-white/10 bg-[#131b2f] hover:border-white/20',
+              ].join(' ')}
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -82,10 +79,10 @@ export default function OwnerEstablishmentEditor({
       </div>
 
       {selectedEstablishment ? (
-        <div onClick={() => setSelectedEstablishment(null)} className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 px-4 py-6 sm:items-center">
-          <div onClick={(e) => e.stopPropagation()} className="relative w-full max-w-6xl max-h-[calc(100vh-8rem)] overflow-hidden sm:rounded-[18px] rounded-none border border-white/10 bg-[#0f1527] shadow-[0_24px_80px_rgba(0,0,0,0.44)] ring-1 ring-white/10">
-            <div className="flex flex-col gap-4 border-b border-white/10 bg-[#12182b] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+        <section className="overflow-hidden rounded-[18px] border border-white/10 bg-[#0f1527] shadow-[0_18px_50px_rgba(0,0,0,0.18)] ring-1 ring-white/10">
+          <div className="border-b border-white/10 bg-[#12182b] px-5 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">
                   Editar estabelecimento
                 </p>
@@ -97,42 +94,42 @@ export default function OwnerEstablishmentEditor({
               <button
                 type="button"
                 onClick={() => setSelectedEstablishment(null)}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/8 text-white ring-1 ring-white/15 transition hover:bg-white/15"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/8 text-xl leading-none text-white ring-1 ring-white/15 transition hover:bg-white/15"
                 aria-label="Fechar edição do estabelecimento"
               >
-                ×
+                <MdClose aria-hidden="true" className="h-5 w-5" />
               </button>
             </div>
+          </div>
 
-            <div className="grid gap-4 px-5 py-5 sm:grid-cols-[1.1fr_0.9fr] sm:px-6 sm:py-6">
-              <div className="space-y-4">
-                <div className="rounded-[18px] border border-white/10 bg-white/5 p-4">
-                  <p className="text-sm font-semibold text-white">Adicionar novo serviço</p>
-                  <p className="mt-2 text-sm leading-6 text-white/60">
-                    Use o formulário abaixo para cadastrar serviços rápidos no estabelecimento selecionado.
-                  </p>
-                </div>
-
-                <ServiceForm establishmentId={selectedEstablishment.id} catalog={catalog} />
+          <div className="grid gap-4 px-5 py-5 sm:grid-cols-[1.1fr_0.9fr] sm:px-6 sm:py-6">
+            <div className="space-y-4">
+              <div className="rounded-[18px] border border-white/10 bg-white/5 p-4">
+                <p className="text-sm font-semibold text-white">Adicionar novo serviço</p>
+                <p className="mt-2 text-sm leading-6 text-white/60">
+                  Use o formulário abaixo para cadastrar serviços rápidos no estabelecimento selecionado.
+                </p>
               </div>
 
-              <div className="space-y-4">
-                <div className="rounded-[18px] border border-white/10 bg-white/5 p-4">
-                  <p className="text-sm font-semibold text-white">Serviços cadastrados</p>
-                  <p className="mt-2 text-sm leading-6 text-white/60">
-                    Edite preços, duração, categoria ou pause e remova serviços já existentes.
-                  </p>
-                </div>
+              <ServiceForm establishmentId={selectedEstablishment.id} catalog={catalog} />
+            </div>
 
-                <ServiceList
-                  services={selectedEstablishment.services}
-                  establishmentId={selectedEstablishment.id}
-                  catalog={catalog}
-                />
+            <div className="space-y-4">
+              <div className="rounded-[18px] border border-white/10 bg-white/5 p-4">
+                <p className="text-sm font-semibold text-white">Serviços cadastrados</p>
+                <p className="mt-2 text-sm leading-6 text-white/60">
+                  Edite preços, duração, categoria ou pause e remova serviços já existentes.
+                </p>
               </div>
+
+              <ServiceList
+                services={selectedEstablishment.services}
+                establishmentId={selectedEstablishment.id}
+                catalog={catalog}
+              />
             </div>
           </div>
-        </div>
+        </section>
       ) : null}
     </div>
   )

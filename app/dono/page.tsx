@@ -4,12 +4,36 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import NewEstablishmentModal from '@/components/owner/NewEstablishmentModal'
 import OwnerEstablishmentEditor from '@/components/owner/OwnerEstablishmentEditor'
-import { mapEstabelecimento, mapServico } from '@/lib/supabase/portuguese-schema-adapter'
+import AppointmentBoard from '@/components/admin/AppointmentBoard'
+import {
+  mapServico,
+  toLegacyAppointmentStatus,
+  type AgendamentoPortugues,
+} from '@/lib/supabase/portuguese-schema-adapter'
 import { getServiceCatalog } from '@/lib/services/catalog-server'
+import type { AppointmentStatus } from '@/database.types'
 
 export const dynamic = 'force-dynamic'
 
 const MAX_OWNER_ESTABLISHMENTS = 3
+
+type OwnerAppointment = {
+  id: string
+  establishment_id: string
+  scheduled_at: string
+  status: AppointmentStatus
+  customer_name: string | null
+  customer_phone: string | null
+  total_price: number | null
+  total_duration_minutes: number
+  profiles: { name: string | null; email: string } | null
+  services: { name: string } | null
+  appointment_items: {
+    service_name: string
+    price: number | null
+    duration_minutes: number
+  }[]
+}
 
 export default async function OwnerEntryPage() {
   const supabase = await createClient()
@@ -41,48 +65,103 @@ export default async function OwnerEntryPage() {
       redirect('/aguardando-aprovacao')
     }
 
+    const establishmentIds = (establishments ?? []).map((establishment) => establishment.id)
+    const historyStart = new Date()
+    historyStart.setDate(historyStart.getDate() - 90)
+
+    const { data: rawAppointments } = establishmentIds.length > 0
+      ? await db
+          .from('agendamentos')
+          .select('id, estabelecimento_id, horario, status, nome_cliente, telefone_cliente, preco_total, duracao_total_minutos, usuarios(nome, email), itens_agendamento(nome_servico, preco, duracao_minutos)')
+          .in('estabelecimento_id', establishmentIds)
+          .gte('horario', historyStart.toISOString())
+          .order('horario', { ascending: true })
+          .limit(500)
+      : { data: [] }
+
+    const appointments: OwnerAppointment[] = ((rawAppointments ?? []) as AgendamentoPortugues[]).map((appointment) => ({
+      id: appointment.id,
+      establishment_id: appointment.estabelecimento_id,
+      scheduled_at: appointment.horario,
+      status: toLegacyAppointmentStatus(appointment.status),
+      customer_name: appointment.nome_cliente,
+      customer_phone: appointment.telefone_cliente,
+      total_price: appointment.preco_total,
+      total_duration_minutes: appointment.duracao_total_minutos,
+      profiles: (() => {
+        const profile = Array.isArray(appointment.usuarios) ? (appointment.usuarios[0] ?? null) : appointment.usuarios
+        return profile ? { name: profile.nome, email: profile.email ?? '' } : null
+      })(),
+      services: null,
+      appointment_items: (appointment.itens_agendamento ?? []).map((item) => ({
+        service_name: item.nome_servico,
+        price: item.preco,
+        duration_minutes: item.duracao_minutos,
+      })),
+    }))
+
+    const pendingCount = appointments.filter((appointment) => appointment.status === 'pending').length
+
     return (
       <main className="min-h-screen bg-[#1A2033] px-4 py-8 text-white sm:px-6 lg:px-8">
-        <section className="mx-auto w-full max-w-3xl space-y-5 py-8">
-          <div className="rounded-[8px] bg-white/6 p-5 ring-1 ring-white/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">
-              Meus estabelecimentos
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold">Gerencie seus negócios</h1>
-            <p className="mt-2 text-sm leading-6 text-white/68">
-              Cada comerciante pode ter até {MAX_OWNER_ESTABLISHMENTS} estabelecimentos aprovados no IBeleza.
-            </p>
+        <section className="mx-auto w-full max-w-5xl space-y-5 py-8">
+          <section className="rounded-[8px] bg-white/6 p-5 ring-1 ring-white/10">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">
+                  Aprovar agendamentos
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold">Solicitações dos clientes</h2>
+                <p className="mt-2 text-sm leading-6 text-white/68">
+                  Confirme, recuse ou finalize os horários solicitados em seus estabelecimentos.
+                </p>
+              </div>
+              <span className="w-fit rounded-full bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-100">
+                {pendingCount} pendente{pendingCount === 1 ? '' : 's'}
+              </span>
+            </div>
 
-            <div className="mt-4 divide-y divide-white/10 rounded-[8px] border border-white/10 bg-[#11172B]/45">
-              {(establishments ?? []).map((establishment) => (
-                <div key={establishment.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-medium text-white">{establishment.nome}</p>
-                    <p className="mt-1 text-sm text-white/55">/{establishment.slug}</p>
+            <div className="mt-5 space-y-6">
+              {(establishments ?? []).map((establishment) => {
+                const establishmentAppointments = appointments.filter(
+                  (appointment) => appointment.establishment_id === establishment.id,
+                )
+                const pending = establishmentAppointments.filter((appointment) => appointment.status === 'pending')
+                const confirmed = establishmentAppointments.filter((appointment) =>
+                  (['confirmed', 'checked_in'] as AppointmentStatus[]).includes(appointment.status),
+                )
+                const completed = establishmentAppointments.filter((appointment) =>
+                  (['completed', 'cancelled', 'no_show'] as AppointmentStatus[]).includes(appointment.status),
+                )
+
+                return (
+                  <div key={establishment.id} className="rounded-[8px] border border-white/10 bg-[#11172B]/45 p-4">
+                    <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h3 className="font-semibold text-white">{establishment.nome}</h3>
+                        <p className="text-sm text-white/48">/{establishment.slug}</p>
+                      </div>
+                      <span className="w-fit rounded-full bg-white/8 px-3 py-1 text-xs font-semibold text-white/60">
+                        {establishmentAppointments.length} agendamento{establishmentAppointments.length === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                    <AppointmentBoard
+                      pendingApproval={pending}
+                      confirmed={confirmed}
+                      completedServices={completed}
+                      establishmentId={establishment.id}
+                      establishmentName={establishment.nome}
+                    />
                   </div>
-                  <span
-                    className={[
-                      'w-fit rounded-full px-3 py-1 text-xs font-semibold',
-                      establishment.bloqueado
-                        ? 'bg-[#ff8ea8]/12 text-[#ff8ea8]'
-                        : establishment.status_aprovacao === 'pendente'
-                          ? 'bg-amber-300/10 text-amber-100'
-                          : 'bg-emerald-400/10 text-emerald-100',
-                    ].join(' ')}
-                  >
-                    {establishment.status_aprovacao === 'pendente'
-                      ? 'Aguardando aprovação'
-                      : establishment.bloqueado
-                        ? 'Pausado'
-                        : 'Ativo'}
-                  </span>
-                </div>
-              ))}
+                )
+              })}
               {(establishments ?? []).length === 0 ? (
-                <p className="p-4 text-sm text-white/55">Você ainda não cadastrou nenhum estabelecimento.</p>
+                <p className="rounded-[8px] bg-[#11172B]/45 p-4 text-sm text-white/55">
+                  Cadastre um estabelecimento para receber e aprovar agendamentos.
+                </p>
               ) : null}
             </div>
-          </div>
+          </section>
 
           {(establishments ?? []).length < MAX_OWNER_ESTABLISHMENTS ? (
             <OwnerEstablishmentEditor

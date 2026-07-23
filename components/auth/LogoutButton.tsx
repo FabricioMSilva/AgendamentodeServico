@@ -1,27 +1,26 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import { createClient } from '@/lib/supabase/client'
 
 type Props = {
   redirectTo?: string
   className?: string
+  label?: string
 }
 
-export default function LogoutButton({ redirectTo = '/login', className = '' }: Props) {
-  const router = useRouter()
+export default function LogoutButton({ redirectTo = '/login', className = '', label = 'Sair' }: Props) {
   const [busy, setBusy] = useState(false)
 
   const handleLogout = async () => {
     setBusy(true)
+    window.dispatchEvent(new Event('ibeleza-loading:start'))
 
     try {
       const supabase = createClient()
       await supabase.auth.signOut()
-      router.refresh()
-      router.push(redirectTo)
+      window.location.assign(redirectTo)
     } finally {
       setBusy(false)
     }
@@ -36,7 +35,7 @@ export default function LogoutButton({ redirectTo = '/login', className = '' }: 
       loading={busy}
       className={className}
     >
-      Sair
+      {label}
     </Button>
   )
 }

@@ -56,6 +56,16 @@ select {
   font-family: var(--font-brand), system-ui, sans-serif;
 }
 
+@keyframes ibeleza-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.04);
+  }
+}
+
 .ib-booking-calendar {
   --rdp-accent-color: #ff66b2;
   --rdp-day-height: 40px;
